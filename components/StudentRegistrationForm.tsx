@@ -4,8 +4,10 @@ import { GRADE_OPTIONS } from '../constants';
 
 interface StudentRegistrationFormProps {
   students: Student[];
+  initialData?: Student;
   onBack: () => void;
-  onRegister: (student: Omit<Student, 'id'>) => void;
+  onRegister: (student: Omit<Student, 'id'> | Student) => void;
+  onDelete?: (id: string, name: string) => void;
 }
 
 const RELATIONSHIP_OPTIONS = [
@@ -15,7 +17,7 @@ const RELATIONSHIP_OPTIONS = [
   "Enteado(a)", "Padrasto", "Madrasta", "Primo(a)", "Outro Vínculo"
 ];
 
-const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ students, onBack, onRegister }) => {
+const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ students, initialData, onBack, onRegister, onDelete }) => {
   const maskPhone = (value: string) => {
     return value
       .replace(/\D/g, '')
@@ -25,33 +27,33 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
   };
 
   const [formData, setFormData] = useState({
-    useSocialName: false,
-    name: '',
-    socialName: '',
-    birthDate: '',
-    grade: '',
-    classroom: '',
-    room: '',
-    turn: '' as any,
-    responsibleName: '',
-    relationship: '',
-    otherRelationship: '',
-    contactPhone: '',
-    backupPhone: '',
-    landline: '',
-    workPhone: '',
-    email: '',
-    isAEE: false,
-    pcdStatus: '' as 'com_laudo' | 'sob_investigacao' | '',
-    cid: '',
-    investigationDescription: '',
-    schoolNeed: [] as ('estrutura_fisica' | 'adaptacao_curricular' | 'atendimento_especializado')[],
-    pedagogicalEvaluationType: '',
-    observations: ''
+    useSocialName: initialData?.socialName ? true : false,
+    name: initialData?.name || '',
+    socialName: initialData?.socialName || '',
+    birthDate: initialData?.birthDate || '',
+    grade: initialData?.grade || '',
+    classroom: initialData?.classroom || '',
+    room: initialData?.room || '',
+    turn: (initialData?.turn as any) || '',
+    responsibleName: initialData?.responsibleName || '',
+    relationship: initialData?.relationship || '',
+    otherRelationship: initialData?.otherRelationship || '',
+    contactPhone: initialData?.contactPhone || '',
+    backupPhone: initialData?.backupPhone || '',
+    landline: initialData?.landline || '',
+    workPhone: initialData?.workPhone || '',
+    email: initialData?.email || '',
+    isAEE: initialData?.isAEE || false,
+    pcdStatus: (initialData?.pcdStatus as any) || '',
+    cid: initialData?.cid || '',
+    investigationDescription: initialData?.investigationDescription || '',
+    schoolNeed: (initialData?.schoolNeed as any) || [],
+    pedagogicalEvaluationType: initialData?.pedagogicalEvaluationType || '',
+    observations: initialData?.observations || ''
   });
 
   const [age, setAge] = useState<number | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.profileImage || null);
   const [responsibleFound, setResponsibleFound] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,12 +138,19 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
     if (!formData.name) return alert("O nome completo é obrigatório.");
     if (formData.useSocialName && !formData.socialName) return alert("O nome social é obrigatório.");
     if (formData.birthDate.length < 10) return alert("Insira uma data de nascimento válida.");
-    onRegister({
+    
+    const studentData = {
       ...formData,
       name: formData.name,
       age: age || 0,
       profileImage: photoPreview || `https://i.pravatar.cc/150?u=${formData.name}`
-    });
+    };
+
+    if (initialData) {
+      onRegister({ ...studentData, id: initialData.id } as Student);
+    } else {
+      onRegister(studentData as Omit<Student, 'id'>);
+    }
   };
 
   return (
@@ -418,9 +427,20 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
           <textarea name="observations" value={formData.observations} onChange={handleInputChange} placeholder="Informações médicas, comportamentais..." className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none text-sm font-medium"></textarea>
         </div>
 
-        <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider">
-          <i className="fas fa-save mr-3"></i> Salvar cadastro do aluno
-        </button>
+        <div className="flex space-x-3">
+          {initialData && onDelete && (
+            <button 
+              type="button" 
+              onClick={() => onDelete(initialData.id, initialData.name)}
+              className="flex-1 bg-red-50 text-red-600 py-5 rounded-2xl font-bold border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider"
+            >
+              <i className="fas fa-trash-alt mr-3"></i> Excluir
+            </button>
+          )}
+          <button type="submit" className="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider">
+            <i className="fas fa-save mr-3"></i> Salvar cadastro do aluno
+          </button>
+        </div>
       </form>
     </div>
   );

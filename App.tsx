@@ -185,7 +185,7 @@ const App: React.FC = () => {
   const handleRegisterUser = async (userData: Omit<User, 'id' | 'status'>) => {
     const newUser: User = {
       ...userData,
-      id: `u_${Date.now()}`,
+      id: crypto.randomUUID(),
       status: 'Inativo'
     };
     
@@ -201,6 +201,9 @@ const App: React.FC = () => {
         recordLog('critical.action', 'success', userData.cpf, 'Novo cadastro de colaborador realizado');
         alert('Cadastro realizado com sucesso! Sua conta está "Desativada" e aguarda ativação pelo administrador.');
         setView('LOGIN');
+      } else {
+        const errorData = await res.json();
+        alert(`Erro ao realizar cadastro: ${errorData.error || 'Erro desconhecido'}`);
       }
     } catch (err) {
       console.error("Failed to register user:", err);
@@ -211,7 +214,7 @@ const App: React.FC = () => {
   const handleRegisterStudent = async (studentData: Omit<Student, 'id'>) => {
     const newStudent: Student = {
       ...studentData,
-      id: `st_${Date.now()}`
+      id: crypto.randomUUID()
     };
     
     try {
@@ -234,7 +237,7 @@ const App: React.FC = () => {
   };
 
   const handleAddOccurrence = async (newOcc: Omit<Occurrence, 'id'>) => {
-    const occurrenceWithId: Occurrence = { ...newOcc, id: `occ_${Date.now()}` };
+    const occurrenceWithId: Occurrence = { ...newOcc, id: crypto.randomUUID() };
     
     try {
       const res = await fetch('/api/occurrences', {
@@ -375,6 +378,46 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (confirm(`ATENÇÃO: Deseja realmente excluir permanentemente o aluno ${studentName}? Esta ação excluirá também todas as ocorrências vinculadas a ele e não pode ser desfeita.`)) {
+      try {
+        const res = await fetch(`/api/students/${studentId}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          setStudents(prev => prev.filter(s => s.id !== studentId));
+          setOccurrences(prev => prev.filter(occ => occ.studentId !== studentId));
+          recordLog('critical.action', 'success', undefined, `Aluno excluído: ${studentName} (${studentId})`);
+          alert('Aluno e suas ocorrências foram removidos do sistema.');
+        }
+      } catch (err) {
+        console.error("Failed to delete student:", err);
+        alert("Erro ao excluir aluno.");
+      }
+    }
+  };
+
+  const handleUpdateStudent = async (updatedStudent: Student) => {
+    try {
+      const res = await fetch(`/api/students/${updatedStudent.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedStudent)
+      });
+      
+      if (res.ok) {
+        setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+        recordLog('critical.action', 'success', undefined, `Dados do aluno atualizados: ${updatedStudent.name}`);
+        setView('STUDENT_LIST');
+        alert('Dados do aluno atualizados com sucesso!');
+      }
+    } catch (err) {
+      console.error("Failed to update student:", err);
+      alert("Erro ao atualizar dados do aluno.");
+    }
+  };
+
   const handleMarkAsRead = (id: string) => {
     const remaining = unreadOccurrenceIds.filter(unreadId => unreadId !== id);
     setUnreadOccurrenceIds(remaining);
@@ -496,14 +539,41 @@ const App: React.FC = () => {
             </div>
             <div className="space-y-3 pb-20">
               {filteredStudents.map(student => (
-                <button key={student.id} onClick={() => { setSelectedStudent(student); setView('STUDENT_DETAIL'); }} className="w-full bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 hover:border-indigo-300 transition-all active:scale-[0.98]">
-                  <img src={student.profileImage || DEFAULT_STUDENT_IMAGE} alt={student.name} className="w-12 h-12 rounded-full object-cover border-border-slate-100" />
-                  <div className="flex-1 text-left">
-                    <h3 className="font-bold text-slate-800">{student.name}</h3>
-                    <p className="text-xs text-slate-500 font-medium">{student.grade} - {student.classroom}</p>
-                  </div>
-                  <i className="fas fa-chevron-right text-slate-300"></i>
-                </button>
+                <div key={student.id} className="flex items-center space-x-2">
+                  <button onClick={() => { setSelectedStudent(student); setView('STUDENT_DETAIL'); }} className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 hover:border-indigo-300 transition-all active:scale-[0.98]">
+                    <img src={student.profileImage || DEFAULT_STUDENT_IMAGE} alt={student.name} className="w-12 h-12 rounded-full object-cover border-border-slate-100" />
+                    <div className="flex-1 text-left">
+                      <h3 className="font-bold text-slate-800">{student.name}</h3>
+                      <p className="text-xs text-slate-500 font-medium">{student.grade} - {student.classroom}</p>
+                    </div>
+                    <i className="fas fa-chevron-right text-slate-300"></i>
+                  </button>
+                  {currentUser?.isSystemAdmin && (
+                    <div className="flex flex-col space-y-1">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedStudent(student);
+                          setView('EDIT_STUDENT');
+                        }}
+                        className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-100 transition-colors active:scale-90"
+                        title="Editar Aluno"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteStudent(student.id, student.name);
+                        }}
+                        className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-100 transition-colors active:scale-90"
+                        title="Excluir Aluno"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
             {currentUser?.isSystemAdmin && (
@@ -524,6 +594,16 @@ const App: React.FC = () => {
         return selectedStudent ? <Formalization student={selectedStudent} onBack={() => setView('PENDING_OCCURRENCES')} /> : null;
       case 'ADD_STUDENT':
         return <StudentRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} />;
+      case 'EDIT_STUDENT':
+        return (
+          <StudentRegistrationForm 
+            students={students} 
+            initialData={selectedStudent || undefined}
+            onBack={() => setView('STUDENT_LIST')} 
+            onRegister={(data) => handleUpdateStudent(data as Student)} 
+            onDelete={handleDeleteStudent}
+          />
+        );
       case 'ADD_OCCURRENCE':
         return <OccurrenceForm students={students} occurrences={occurrences} currentUser={currentUser} onSave={handleAddOccurrence} />;
       case 'USER_MANAGEMENT':
@@ -547,6 +627,7 @@ const App: React.FC = () => {
       case 'STUDENT_LIST': return 'Lista de Alunos';
       case 'STUDENT_DETAIL': return 'Histórico do Aluno';
       case 'ADD_STUDENT': return 'Cadastro de Aluno';
+      case 'EDIT_STUDENT': return 'Editar Cadastro';
       case 'ADD_OCCURRENCE': return 'Nova Ocorrência';
       case 'USER_REGISTRATION': return 'Cadastro de Sistema';
       case 'USER_MANAGEMENT': return 'Gestão de Colaboradores';
@@ -570,7 +651,7 @@ const App: React.FC = () => {
       setView('USER_MANAGEMENT');
     } else if (view === 'MY_PROFILE') {
       setView('DASHBOARD');
-    } else if (view === 'ADD_STUDENT') {
+    } else if (view === 'ADD_STUDENT' || view === 'EDIT_STUDENT') {
       setView('STUDENT_LIST');
     } else if (view === 'STUDENT_DEFENSE' || view === 'FORMALIZATION') {
       setView('PENDING_OCCURRENCES');
@@ -594,7 +675,7 @@ const App: React.FC = () => {
       setView={setView} 
       title={getTitle()} 
       isAdmin={currentUser?.isSystemAdmin} 
-      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE'].includes(view)} 
+      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE'].includes(view)} 
       onBack={handleBack}
       onLogout={handleLogout}
     >

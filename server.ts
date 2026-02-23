@@ -65,6 +65,7 @@ async function startServer() {
       );
       res.status(201).json({ success: true });
     } catch (err) {
+      console.error("User registration error:", err);
       res.status(500).json({ error: (err as Error).message });
     }
   });
@@ -126,6 +127,32 @@ async function startServer() {
         [s.id, s.name, s.socialName, s.grade, s.classroom, s.room, s.turn, s.birthDate, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email, s.profileImage, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType]
       );
       res.status(201).json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/students/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+      // First delete occurrences associated with the student
+      await query("DELETE FROM occurrences WHERE student_id = $1", [id]);
+      await query("DELETE FROM students WHERE id = $1", [id]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.put("/api/students/:id", async (req, res) => {
+    const { id } = req.params;
+    const s = req.body;
+    try {
+      await query(
+        "UPDATE students SET name = $1, social_name = $2, grade = $3, classroom = $4, room = $5, turn = $6, birth_date = $7, responsible_name = $8, relationship = $9, other_relationship = $10, contact_phone = $11, backup_phone = $12, landline = $13, work_phone = $14, email = $15, profile_image = $16, observations = $17, is_aee = $18, pcd_status = $19, cid = $20, investigation_description = $21, school_need = $22, pedagogical_evaluation_type = $23 WHERE id = $24",
+        [s.name, s.socialName, s.grade, s.classroom, s.room, s.turn, s.birthDate, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email, s.profileImage, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, id]
+      );
+      res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }
@@ -210,10 +237,10 @@ async function startServer() {
 
   app.post("/api/reset-db", async (req, res) => {
     try {
-      await query("TRUNCATE occurrences, students, access_logs RESTART IDENTITY CASCADE");
+      await query("TRUNCATE occurrences, students, access_logs CASCADE");
       // Keep users but maybe deactivate them? Or just leave them for now.
       // The user requested to reset the database.
-      await query("DELETE FROM users WHERE id != 'admin_seed'");
+      await query("DELETE FROM users WHERE id != '00000000-0000-0000-0000-000000000001'");
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });

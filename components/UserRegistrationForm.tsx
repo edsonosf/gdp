@@ -137,10 +137,16 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
   const validate = () => {
     if (formData.useSocialName === 'nao' && !formData.fullName) return "Nome Completo é obrigatório.";
     if (formData.useSocialName === 'sim' && !formData.socialName) return "Nome Social é obrigatório.";
-    if (!formData.matricula) return "Matrícula é obrigatória.";
-    if (!formData.legalConsent) return "Você deve declarar estar ciente dos termos legais.";
+    if (!formData.gender) return "Identidade de Gênero é obrigatória.";
+    if (!formData.birthDate) return "Data de Nascimento é obrigatória.";
     if (!formData.cpf) return "CPF é obrigatório para o login.";
     if (!formData.phone) return "Celular de contato é obrigatório.";
+    if (!formData.secretaria) return "Secretaria de origem é obrigatória.";
+    if (!formData.lotacao) return "Lotação atual é obrigatória.";
+    if (!formData.matricula) return "Matrícula é obrigatória.";
+    if (!formData.funcao) return "A função é obrigatória.";
+    if (formData.funcao === 'Outra Função' && !formData.otherFuncao) return "Especifique sua função.";
+    if (!formData.legalConsent) return "Você deve declarar estar ciente dos termos legais.";
     return null;
   };
 
@@ -155,7 +161,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
     const userData: Omit<User, 'id' | 'status'> = {
       name: formData.useSocialName === 'sim' ? formData.socialName : formData.fullName,
       socialName: formData.useSocialName === 'sim' ? formData.socialName : '',
-      email: formData.email,
+      email: formData.email || null,
       cpf: formData.cpf,
       secretaria: formData.secretaria,
       lotacao: formData.lotacao,
@@ -439,7 +445,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
             </label>
         </div>
 
-        <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center disabled:bg-slate-300 disabled:shadow-none" disabled={!formData.legalConsent}>
+        <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center disabled:bg-slate-300 disabled:shadow-none">
           <i className="fas fa-check-circle mr-2"></i>
           Finalizar Cadastro
         </button>

@@ -160,7 +160,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
       description,
       severity: currentSeverity,
       reporterName: currentUser?.name || 'Sistema',
-      reporterId: currentUser?.id || 'sys',
+      reporterId: currentUser?.id || '00000000-0000-0000-0000-000000000000',
       status: 'Pendente'
     });
   };

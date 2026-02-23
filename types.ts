@@ -56,7 +56,7 @@ export interface User {
   id: string;
   name: string;
   role: string;
-  email: string;
+  email?: string | null;
   cpf: string;
   status: 'Ativo' | 'Inativo';
   profileImage?: string;
@@ -96,4 +96,4 @@ export interface AccessLog {
   };
 }
 
-export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE';
+export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'EDIT_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE';

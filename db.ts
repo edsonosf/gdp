@@ -18,7 +18,7 @@ export const query = (text: string, params?: any[]) => pool.query(text, params);
 export async function initDb() {
   await query(`
     CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT,
       social_name TEXT,
       role TEXT,
@@ -44,9 +44,21 @@ export async function initDb() {
       custom_schedule_details TEXT[],
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    
+    -- Ensure all columns exist (for existing tables)
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS components TEXT[];
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS disciplines TEXT[];
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS carga_horaria TEXT[];
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS turno_trabalho TEXT[];
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS additional_info TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS has_custom_schedule BOOLEAN DEFAULT FALSE;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_schedule_details TEXT[];
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS social_name TEXT;
 
     CREATE TABLE IF NOT EXISTS students (
-      id TEXT PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name TEXT NOT NULL,
       social_name TEXT,
       grade TEXT,
@@ -73,22 +85,30 @@ export async function initDb() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS social_name TEXT;
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS is_aee BOOLEAN DEFAULT FALSE;
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS pcd_status TEXT;
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS cid TEXT;
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS investigation_description TEXT;
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS school_need TEXT[];
+    ALTER TABLE students ADD COLUMN IF NOT EXISTS pedagogical_evaluation_type TEXT;
+
     CREATE TABLE IF NOT EXISTS occurrences (
-      id TEXT PRIMARY KEY,
-      student_id TEXT REFERENCES students(id),
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      student_id UUID REFERENCES students(id),
       date TEXT,
       type TEXT,
       severity TEXT,
       titles TEXT[],
       description TEXT,
       reporter_name TEXT,
-      reporter_id TEXT,
+      reporter_id UUID,
       status TEXT DEFAULT 'Pendente',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS access_logs (
-      id SERIAL PRIMARY KEY,
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       timestamp TEXT,
       user_id TEXT,
       event TEXT,
@@ -103,6 +123,7 @@ export async function initDb() {
   
   // Seed initial admin user if not exists
   const adminCpf = '111.111.111-11';
+  const adminId = '00000000-0000-0000-0000-000000000001';
   await query(`
     INSERT INTO users (id, name, role, email, cpf, status, phone, is_system_admin)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -111,82 +132,83 @@ export async function initDb() {
       status = EXCLUDED.status,
       is_system_admin = EXCLUDED.is_system_admin,
       phone = EXCLUDED.phone
-  `, ['admin_seed', 'Administrador', 'Administrador do Sistema', 'admin@educontrol.com', adminCpf, 'Ativo', '(85) 9 9690-3476', true]);
+  `, [adminId, 'Administrador', 'Administrador do Systema', 'admin@educontrol.com', adminCpf, 'Ativo', '(85) 9 9690-3476', true]);
   
   console.log('Seed: Administrator user synchronized');
 
-  // Seed students from user request
-  const studentsToSeed = [
-    "ANA JULIA SOUSA DA SILVA BRITO",
-    "ANNA GABRIELA DO CARMO OLIVEIRA",
-    "ARTHUR SOUSA DE OLIVEIRA",
-    "BERNARDO MARTINS NUNES",
-    "DAVI IARLEY MOREIRA E SILVA",
-    "DAVI LUIZ DA SILVA PAIVA",
-    "EMERSON GABRIEL NUNES RODRIGUES",
-    "GEOVANNA BARROSO FERREIRA",
-    "GUSTAVO SILVA LIMA",
-    "HAVYLLA HELOIZA PINHEIRO COSTA",
-    "HELENA KETELLEN PINTO DO NASCIMENTO",
-    "INGRID LORRANY DA SILVA SOUZA",
-    "JOAO MIGUEL DA SILVA DE OLIVEIRA",
-    "JOSE VICTOR DA SILVA LOURENCO",
-    "KAUANY KELLEN DE OLIVEIRA SAMPAIO",
-    "KETLEY MARIA PEREIRA MARQUES DE PAULO",
-    "MARIA CECILIA SALUSTIANO COSTA",
-    "MARIA JULIA LIMA VIANA",
-    "MARIA JULIA NOBRE DE OLIVEIRA",
-    "MARIA LUIZA GONCALVES CORREIA",
-    "MATHEUS DE SOUSA SANTOS",
-    "NATANAEL ALBINO MELO",
-    "NEEMIAS MEDEIROS DE LIMA SILVA",
-    "OTAVIO AIRTON DUTRA DE LIMA",
-    "PEDRO ERNESTO RODRIGUES PAIVA",
-    "RIAN RIBEIRO DA SILVA ALVES",
-    "RONALD CAUAN BARBOZA ALVES",
-    "SAMUEL DA SILVA COSTA",
-    "THIAGO MENDES DE SA",
-    "TICIANY BARBOSA RODRIGUES",
-    "VINICIUS NUNES SANTIAGO",
-    "WILLAME RYAN BITTENCOURT OLIVEIRA",
-    "YASMIM SILVA CAVALCANTE",
-    "ADRYAN VICTOR RODRIGUES DE SOUSA",
-    "ALIKA VITORIA DA SILVA LOPES",
-    "ANA JULIA DO NASCIMENTO NOBRE",
-    "DAVI LUCCA DE SOUSA CONCEICAO",
-    "DAVI LUIZ PEREIRA DA SILVA",
-    "DEBORA FERREIRA BARBOSA MONTE",
-    "EDVAN ERICK DE SOUZA QUEIROZ",
-    "ERICK DAVID DE SOUZA GOES",
-    "FRANCISCO ISMAEL SANTOS PEREIRA",
-    "GABRIEL ALIXANDRE DE LIMA GOMES",
-    "GLAUBER DE OLIVEIRA MORAIS",
-    "GUSTAVO GOMES FREITAS"
-  ];
+  // Seed students from user request if table is empty
+  const studentCheck = await query("SELECT id FROM students LIMIT 1");
+  if (studentCheck.rows.length === 0) {
+    const studentsToSeed = [
+      "ANA JULIA SOUSA DA SILVA BRITO",
+      "ANNA GABRIELA DO CARMO OLIVEIRA",
+      "ARTHUR SOUSA DE OLIVEIRA",
+      "BERNARDO MARTINS NUNES",
+      "DAVI IARLEY MOREIRA E SILVA",
+      "DAVI LUIZ DA SILVA PAIVA",
+      "EMERSON GABRIEL NUNES RODRIGUES",
+      "GEOVANNA BARROSO FERREIRA",
+      "GUSTAVO SILVA LIMA",
+      "HAVYLLA HELOIZA PINHEIRO COSTA",
+      "HELENA KETELLEN PINTO DO NASCIMENTO",
+      "INGRID LORRANY DA SILVA SOUZA",
+      "JOAO MIGUEL DA SILVA DE OLIVEIRA",
+      "JOSE VICTOR DA SILVA LOURENCO",
+      "KAUANY KELLEN DE OLIVEIRA SAMPAIO",
+      "KETLEY MARIA PEREIRA MARQUES DE PAULO",
+      "MARIA CECILIA SALUSTIANO COSTA",
+      "MARIA JULIA LIMA VIANA",
+      "MARIA JULIA NOBRE DE OLIVEIRA",
+      "MARIA LUIZA GONCALVES CORREIA",
+      "MATHEUS DE SOUSA SANTOS",
+      "NATANAEL ALBINO MELO",
+      "NEEMIAS MEDEIROS DE LIMA SILVA",
+      "OTAVIO AIRTON DUTRA DE LIMA",
+      "PEDRO ERNESTO RODRIGUES PAIVA",
+      "RIAN RIBEIRO DA SILVA ALVES",
+      "RONALD CAUAN BARBOZA ALVES",
+      "SAMUEL DA SILVA COSTA",
+      "THIAGO MENDES DE SA",
+      "TICIANY BARBOSA RODRIGUES",
+      "VINICIUS NUNES SANTIAGO",
+      "WILLAME RYAN BITTENCOURT OLIVEIRA",
+      "YASMIM SILVA CAVALCANTE",
+      "ADRYAN VICTOR RODRIGUES DE SOUSA",
+      "ALIKA VITORIA DA SILVA LOPES",
+      "ANA JULIA DO NASCIMENTO NOBRE",
+      "DAVI LUCCA DE SOUSA CONCEICAO",
+      "DAVI LUIZ PEREIRA DA SILVA",
+      "DEBORA FERREIRA BARBOSA MONTE",
+      "EDVAN ERICK DE SOUZA QUEIROZ",
+      "ERICK DAVID DE SOUZA GOES",
+      "FRANCISCO ISMAEL SANTOS PEREIRA",
+      "GABRIEL ALIXANDRE DE LIMA GOMES",
+      "GLAUBER DE OLIVEIRA MORAIS",
+      "GUSTAVO GOMES FREITAS"
+    ];
 
-  for (const name of studentsToSeed) {
-    const id = `st_seed_${name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_')}`;
-    const isEmerson = name === "EMERSON GABRIEL NUNES RODRIGUES";
-    
-    await query(`
-      INSERT INTO students (id, name, grade, classroom, turn, birth_date, responsible_name, relationship, contact_phone, email, is_aee, pcd_status, cid)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      ON CONFLICT (id) DO NOTHING
-    `, [
-      id, 
-      name, 
-      '1º Ano', 
-      'A', 
-      'Manhã', 
-      '01/01/2015', 
-      'Responsável', 
-      'Mãe', 
-      '(85) 9 0000-0000', 
-      `${name.toLowerCase().split(' ')[0]}@escola.com`,
-      isEmerson,
-      isEmerson ? 'com_laudo' : '',
-      isEmerson ? 'Transtorno do Espectro Autista, TDAH' : ''
-    ]);
+    for (const name of studentsToSeed) {
+      const isEmerson = name === "EMERSON GABRIEL NUNES RODRIGUES";
+      
+      await query(`
+        INSERT INTO students (name, grade, classroom, turn, birth_date, responsible_name, relationship, contact_phone, email, is_aee, pcd_status, cid)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `, [
+        name, 
+        '1º Ano', 
+        'A', 
+        'Manhã', 
+        '01/01/2015', 
+        'Responsável', 
+        'Mãe', 
+        '(85) 9 0000-0000', 
+        `${name.toLowerCase().split(' ')[0]}@escola.com`,
+        isEmerson,
+        isEmerson ? 'com_laudo' : '',
+        isEmerson ? 'Transtorno do Espectro Autista, TDAH' : ''
+      ]);
+    }
+    console.log('Seed: Students synchronized');
   }
 
   console.log('Seed: Students synchronized');
