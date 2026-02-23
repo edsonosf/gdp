@@ -41,6 +41,9 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog }) => {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [dbStatus, setDbStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [dbMessage, setDbMessage] = useState('');
+  const [showResetPopup, setShowResetPopup] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState<{ id: string, name: string } | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
 
   // Estados para Identidade Visual
   const [leftLogo, setLeftLogo] = useState<string | null>(null);
@@ -152,35 +155,59 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog }) => {
     }
   };
 
-  const handleResetDatabase = () => {
-    const msg1 = "ATENÇÃO: Esta ação é IRREVERSÍVEL.\n\nTodos os alunos, ocorrências e usuários (exceto os padrões do sistema) serão APAGADOS permanentemente.\n\nDeseja realmente limpar todo o banco de dados?";
-    if (!window.confirm(msg1)) return;
+  const handleResetDatabase = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admins');
+      if (res.ok) {
+        const admins = await res.json();
+        if (admins.length > 0) {
+          const randomAdmin = admins[Math.floor(Math.random() * admins.length)];
+          setSelectedAdmin(randomAdmin);
+          setShowResetPopup(true);
+        } else {
+          alert("Nenhum administrador ativo encontrado para autorizar a ação.");
+        }
+      } else {
+        throw new Error("Falha ao buscar administradores");
+      }
+    } catch (err) {
+      console.error("Fetch admins error:", err);
+      alert("Erro ao preparar reinicialização.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const msg2 = "CONFIRMAÇÃO FINAL:\n\nTem certeza absoluta? O sistema será resetado para o estado original.";
-    if (!window.confirm(msg2)) return;
+  const confirmResetDatabase = async () => {
+    if (!selectedAdmin || !resetPassword) return;
 
     setLoading(true);
-    setTimeout(async () => {
-      try {
-        const res = await fetch('/api/reset-db', { method: 'POST' });
-        if (res.ok) {
-          localStorage.removeItem('educontrol_unread_ids');
-          localStorage.removeItem('educontrol_current_user');
-          
-          if (onRecordLog) onRecordLog('critical.action', 'success', undefined, 'Banco de dados reinicializado');
-          
-          alert("BANCO DE DADOS REINICIALIZADO!\n\nO sistema será recarregado agora.");
-          window.location.reload();
-        } else {
-          throw new Error("Falha ao resetar banco de dados");
-        }
-      } catch (err) {
-        console.error("Reset error:", err);
-        alert("Erro ao resetar banco de dados.");
-      } finally {
-        setLoading(false);
+    try {
+      const res = await fetch('/api/reset-db', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminId: selectedAdmin.id, password: resetPassword })
+      });
+      
+      if (res.ok) {
+        localStorage.removeItem('educontrol_unread_ids');
+        localStorage.removeItem('educontrol_current_user');
+        
+        if (onRecordLog) onRecordLog('critical.action', 'success', undefined, 'Banco de dados reinicializado');
+        
+        alert("BANCO DE DADOS REINICIALIZADO!\n\nO sistema será recarregado agora.");
+        window.location.reload();
+      } else {
+        const errData = await res.json();
+        alert(`Erro: ${errData.error || "Falha ao resetar banco de dados"}`);
       }
-    }, 1500);
+    } catch (err) {
+      console.error("Reset error:", err);
+      alert("Erro ao resetar banco de dados.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -763,6 +790,73 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog }) => {
             <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
             <p className="text-sm font-black text-indigo-900">Sincronizando...</p>
             <p className="text-[10px] text-slate-400 mt-2 font-bold">Por favor, não feche o aplicativo</p>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Database Popup */}
+      {showResetPopup && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-scale-in">
+            <div className="p-8 bg-slate-900 text-white flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                <i className="fas fa-skull-crossbones text-2xl text-red-500"></i>
+              </div>
+              <h3 className="text-xl font-black mb-1 uppercase tracking-tight">Autorização necessária</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ação crítica detectada</p>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div className="bg-red-50/50 border border-red-100 p-5 rounded-[2rem] text-center">
+                <p className="text-xs font-bold text-red-800 leading-relaxed">
+                  Entre com a senha do Usuário <br/>
+                  <span className="text-base font-black uppercase underline decoration-red-400 decoration-2 underline-offset-8 block mt-2">{selectedAdmin?.name}</span>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 uppercase ml-2">Senha de autorização</label>
+                <div className="relative">
+                  <input 
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder="senha"
+                    className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-red-500 transition-all text-center"
+                    autoFocus
+                  />
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300">
+                    <i className="fas fa-key"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <button 
+                  onClick={() => {
+                    setShowResetPopup(false);
+                    setResetPassword('');
+                    setSelectedAdmin(null);
+                  }}
+                  className="py-4 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black hover:bg-slate-200 transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmResetDatabase}
+                  disabled={!resetPassword || loading}
+                  className="py-4 bg-red-600 text-white rounded-2xl text-[11px] font-black shadow-lg shadow-red-100 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Confirmar reset
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
+              <p className="text-[9px] font-bold text-slate-400 italic">
+                Esta ação apagará permanentemente todos os dados do sistema.
+              </p>
+            </div>
           </div>
         </div>
       )}

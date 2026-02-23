@@ -60,8 +60,8 @@ async function startServer() {
     const u = req.body;
     try {
       await query(
-        "INSERT INTO users (id, name, social_name, role, email, cpf, status, secretaria, lotacao, matricula, phone, phone2, cargo, profile_image, is_system_admin, gender, birth_date, components, disciplines, carga_horaria, turno_trabalho, additional_info, has_custom_schedule, custom_schedule_details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
-        [u.id, u.name, u.socialName, u.role, u.email, u.cpf, u.status || 'Inativo', u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin || false, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails]
+        "INSERT INTO users (id, name, social_name, role, email, cpf, password, status, secretaria, lotacao, matricula, phone, phone2, cargo, profile_image, is_system_admin, gender, birth_date, components, disciplines, carga_horaria, turno_trabalho, additional_info, has_custom_schedule, custom_schedule_details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)",
+        [u.id, u.name, u.socialName, u.role, u.email, u.cpf, u.password, u.status || 'Inativo', u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin || false, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails]
       );
       res.status(201).json({ success: true });
     } catch (err) {
@@ -75,8 +75,8 @@ async function startServer() {
     const u = req.body;
     try {
       await query(
-        "UPDATE users SET name=$1, social_name=$2, role=$3, email=$4, cpf=$5, status=$6, secretaria=$7, lotacao=$8, matricula=$9, phone=$10, phone2=$11, cargo=$12, profile_image=$13, is_system_admin=$14, gender=$15, birth_date=$16, components=$17, disciplines=$18, carga_horaria=$19, turno_trabalho=$20, additional_info=$21, has_custom_schedule=$22, custom_schedule_details=$23 WHERE id=$24",
-        [u.name, u.socialName, u.role, u.email, u.cpf, u.status, u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails, id]
+        "UPDATE users SET name=$1, social_name=$2, role=$3, email=$4, cpf=$5, password=$6, status=$7, secretaria=$8, lotacao=$9, matricula=$10, phone=$11, phone2=$12, cargo=$13, profile_image=$14, is_system_admin=$15, gender=$16, birth_date=$17, components=$18, disciplines=$19, carga_horaria=$20, turno_trabalho=$21, additional_info=$22, has_custom_schedule=$23, custom_schedule_details=$24 WHERE id=$25",
+        [u.name, u.socialName, u.role, u.email, u.cpf, u.password, u.status, u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails, id]
       );
       res.json({ success: true });
     } catch (err) {
@@ -235,12 +235,33 @@ async function startServer() {
     }
   });
 
-  app.post("/api/reset-db", async (req, res) => {
+  app.get("/api/admins", async (req, res) => {
     try {
-      await query("TRUNCATE occurrences, students, access_logs CASCADE");
-      // Keep users but maybe deactivate them? Or just leave them for now.
-      // The user requested to reset the database.
-      await query("DELETE FROM users WHERE id != '00000000-0000-0000-0000-000000000001'");
+      const result = await query("SELECT id, name, password FROM users WHERE is_system_admin = TRUE AND status = 'Ativo'");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post("/api/reset-db", async (req, res) => {
+    const { adminId, password } = req.body;
+    try {
+      // Verify admin password
+      const adminCheck = await query("SELECT password FROM users WHERE id = $1 AND is_system_admin = TRUE", [adminId]);
+      if (adminCheck.rows.length === 0 || adminCheck.rows[0].password !== password) {
+        return res.status(401).json({ error: "Senha incorreta ou usuário sem privilégios." });
+      }
+
+      // Drop all tables to simulate "DROP DATABASE" behavior
+      await query("DROP TABLE IF EXISTS occurrences CASCADE");
+      await query("DROP TABLE IF EXISTS students CASCADE");
+      await query("DROP TABLE IF EXISTS access_logs CASCADE");
+      await query("DROP TABLE IF EXISTS users CASCADE");
+      
+      // Re-initialize database and seed initial admin
+      await initDb();
+
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });

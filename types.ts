@@ -58,6 +58,7 @@ export interface User {
   role: string;
   email?: string | null;
   cpf: string;
+  password?: string;
   status: 'Ativo' | 'Inativo';
   profileImage?: string;
   secretaria: string;

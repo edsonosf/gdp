@@ -24,6 +24,7 @@ export async function initDb() {
       role TEXT,
       email TEXT UNIQUE,
       cpf TEXT UNIQUE,
+      password TEXT,
       status TEXT DEFAULT 'Inativo',
       secretaria TEXT,
       lotacao TEXT,
@@ -56,6 +57,7 @@ export async function initDb() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS has_custom_schedule BOOLEAN DEFAULT FALSE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_schedule_details TEXT[];
     ALTER TABLE users ADD COLUMN IF NOT EXISTS social_name TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;
 
     CREATE TABLE IF NOT EXISTS students (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,17 +124,18 @@ export async function initDb() {
   `);
   
   // Seed initial admin user if not exists
-  const adminCpf = '111.111.111-11';
+  const adminCpf = '999.999.999-99';
   const adminId = '00000000-0000-0000-0000-000000000001';
   await query(`
-    INSERT INTO users (id, name, role, email, cpf, status, phone, is_system_admin)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO users (id, name, role, email, cpf, password, status, phone, is_system_admin)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     ON CONFLICT (id) DO UPDATE SET
       cpf = EXCLUDED.cpf,
+      password = EXCLUDED.password,
       status = EXCLUDED.status,
       is_system_admin = EXCLUDED.is_system_admin,
       phone = EXCLUDED.phone
-  `, [adminId, 'Administrador', 'Administrador do Systema', 'admin@educontrol.com', adminCpf, 'Ativo', '(85) 9 9690-3476', true]);
+  `, [adminId, 'Administrador', 'Administrador do Sistema', 'admin@gdpadmin.com', adminCpf, 'admin123', 'Ativo', '(85) 9 9999-9999', true]);
   
   console.log('Seed: Administrator user synchronized');
 
