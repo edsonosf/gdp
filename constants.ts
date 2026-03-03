@@ -1,107 +1,6 @@
 
 import { Student, Occurrence, OccurrenceType, Severity } from './types';
 
-// Fix: Added missing required properties to match Student interface
-export const INITIAL_STUDENTS: Student[] = [
-  { 
-    id: '1', 
-    name: 'Ana Silva', 
-    grade: '9º Ano', 
-    classroom: 'A', 
-    room: '12',
-    turn: 'Manhã',
-    birthDate: '2010-05-15',
-    responsibleName: 'Maria Silva',
-    relationship: 'Mãe',
-    contactPhone: '(85) 9 9988-7766',
-    email: 'ana.silva@escola.ce.gov.br',
-    profileImage: 'https://picsum.photos/seed/ana/200' 
-  },
-  { 
-    id: '2', 
-    name: 'Bruno Santos', 
-    grade: '8º Ano', 
-    classroom: 'C', 
-    room: '08',
-    turn: 'Tarde',
-    birthDate: '2011-03-20',
-    responsibleName: 'João Santos',
-    relationship: 'Pai',
-    contactPhone: '(85) 9 8877-6655',
-    email: 'bruno.santos@escola.ce.gov.br',
-    profileImage: 'https://picsum.photos/seed/bruno/200' 
-  },
-  { 
-    id: '3', 
-    name: 'Carla Oliveira', 
-    grade: '7º Ano', 
-    classroom: 'B', 
-    room: '05',
-    turn: 'Manhã',
-    birthDate: '2012-08-10',
-    responsibleName: 'Lucia Oliveira',
-    relationship: 'Mãe',
-    contactPhone: '(85) 9 7766-5544',
-    email: 'carla.oliveira@escola.ce.gov.br',
-    profileImage: 'https://picsum.photos/seed/carla/200' 
-  },
-  { 
-    id: '4', 
-    name: 'Diego Ferreira', 
-    grade: '9º Ano', 
-    classroom: 'A', 
-    room: '12',
-    turn: 'Manhã',
-    birthDate: '2010-11-30',
-    responsibleName: 'Pedro Ferreira',
-    relationship: 'Pai',
-    contactPhone: '(85) 9 6655-4433',
-    email: 'diego.ferreira@escola.ce.gov.br',
-    profileImage: 'https://picsum.photos/seed/diego/200' 
-  },
-  { 
-    id: '5', 
-    name: 'Eduarda Lima', 
-    grade: '1º Médio', 
-    classroom: '01', 
-    room: '22',
-    turn: 'Integral',
-    birthDate: '2008-01-25',
-    responsibleName: 'Sonia Lima',
-    relationship: 'Mãe',
-    contactPhone: '(85) 9 5544-3322',
-    email: 'eduarda.lima@escola.ce.gov.br',
-    profileImage: 'https://picsum.photos/seed/eduarda/200' 
-  },
-];
-
-export const INITIAL_OCCURRENCES: Occurrence[] = [
-  {
-    id: 'occ1',
-    studentId: '1',
-    date: '2023-10-25T10:30',
-    type: OccurrenceType.DISCIPLINARY,
-    severity: Severity.MEDIUM,
-    titles: ['Atraso recorrente'],
-    description: 'A aluna chegou com 20 minutos de atraso pela terceira vez na semana sem justificativa.',
-    reporterName: 'Prof. Marcos',
-    reporterId: 'u1',
-    status: 'Pendente'
-  },
-  {
-    id: 'occ2',
-    studentId: '2',
-    date: '2023-10-24T14:15',
-    type: OccurrenceType.PEDAGOGICAL,
-    severity: Severity.LOW,
-    titles: ['Dificuldade em Matemática'],
-    description: 'Demonstrou dificuldade em compreender frações. Recomendado reforço.',
-    reporterName: 'Edson Oliveira dos Santos Filho',
-    reporterId: 'u1',
-    status: 'Pendente'
-  }
-];
-
 export const GENDER_OPTIONS = [
   "Agênero", "Assexual", "Bigênero", "Bissexual", "Cisgênero", 
   "Demigênero (Demiboy/Demigirl)", "Gênero-fluido", "Heterossexual", 
@@ -166,18 +65,11 @@ export const FUNCAO_OPTIONS = [
   "Diretor(a)", "Docente", "Secretário(a) Escolar", "Vice-diretor(a)", "Vigilante", "Outra Função"
 ];
 
+export const GRADE_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 export const COMPONENTE_OPTIONS = ["Linguagens", "Matemática", "Ciências da Natureza", "Ciências Humanas", "Ensino Religioso"];
 export const DISCIPLINA_OPTIONS = ["Língua Portuguesa", "Arte", "Educação Física", "Língua Inglesa", "Matemática", "Ciências", "História", "Geografia", "Ensino Religioso"];
 export const CARGA_OPTIONS = ["50 H", "100 H", "150 H", "200 H"];
 export const TURNO_OPTIONS = ["Integral", "Manhã", "Tarde", "Noite"];
+export const RELATIONSHIP_OPTIONS = ["Pai", "Mãe", "Avô/Avó", "Tio/Tia", "Irmão/Irmã", "Tutor Legal", "Outro"];
 
 export const DEFAULT_STUDENT_IMAGE = "data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='200' height='200' fill='%233B82F6'/%3E%3Cpath d='M100 100C116.569 100 130 86.5685 130 70C130 53.4315 116.569 40 100 40C83.4315 40 70 53.4315 70 70C70 86.5685 83.4315 100 100 100Z' fill='white'/%3E%3Cpath d='M100 115C72.3858 115 50 137.386 50 165V170H150V165C150 137.386 127.614 115 100 115Z' fill='white'/%3E%3C/svg%3E";
-
-export const GRADE_OPTIONS = [
-  "Infantil IV", "Infantil V",
-  "1º Ano (Fundamental)", "2º Ano (Fundamental)", "3º Ano (Fundamental)",
-  "4º Ano (Fundamental)", "5º Ano (Fundamental)", "6º Ano (Fundamental)",
-  "7º Ano (Fundamental)", "8º Ano (Fundamental)", "9º Ano (Fundamental)",
-  "1º Ano (Médio)", "2º Ano (Médio)", "3º Ano (Médio)",
-  "EJA - Fase I", "EJA - Fase II"
-];

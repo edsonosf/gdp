@@ -7,6 +7,7 @@ interface OccurrenceFormProps {
   occurrences: Occurrence[];
   currentUser: User | null;
   initialStudentId?: string;
+  initialStudentIds?: string[];
   onSave: (occurrence: Omit<Occurrence, 'id'>) => void;
 }
 
@@ -95,8 +96,10 @@ const DISCIPLINARY_OPTIONS: { severity: Severity; description: string; items: st
   }
 ];
 
-const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, currentUser, initialStudentId, onSave }) => {
-  const [studentId, setStudentId] = useState(initialStudentId || '');
+const DEFAULT_STUDENT_IMAGE = 'https://via.placeholder.com/150';
+
+const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, currentUser, initialStudentId, initialStudentIds, onSave }) => {
+  const [studentId, setStudentId] = useState(initialStudentId || (initialStudentIds && initialStudentIds.length > 0 ? initialStudentIds[0] : ''));
   const [type, setType] = useState<OccurrenceType>(OccurrenceType.DISCIPLINARY);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
   const [occurrenceDate, setOccurrenceDate] = useState(new Date().toISOString().slice(0, 16));
@@ -147,13 +150,13 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId || selectedTitles.length === 0 || !description) {
+    if ((!studentId && (!initialStudentIds || initialStudentIds.length === 0)) || selectedTitles.length === 0 || !description) {
       alert("Por favor, selecione um aluno, preencha todos os campos e selecione pelo menos um item na classificação.");
       return;
     }
 
-    onSave({
-      studentId,
+    const occurrenceData = {
+      studentId: studentId,
       date: occurrenceDate,
       type,
       titles: selectedTitles,
@@ -161,8 +164,16 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
       severity: currentSeverity,
       reporterName: currentUser?.name || 'Sistema',
       reporterId: currentUser?.id || '00000000-0000-0000-0000-000000000000',
-      status: 'Pendente'
-    });
+      status: 'Pendente' as const
+    };
+
+    if (initialStudentIds && initialStudentIds.length > 1) {
+      initialStudentIds.forEach(id => {
+        onSave({ ...occurrenceData, studentId: id });
+      });
+    } else {
+      onSave(occurrenceData);
+    }
   };
 
   const currentClassificationGroups = type === OccurrenceType.PEDAGOGICAL ? PEDAGOGICAL_OPTIONS : DISCIPLINARY_OPTIONS;
@@ -173,19 +184,44 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
       <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
         <button 
           type="button"
-          onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+          onClick={() => (!initialStudentIds || initialStudentIds.length <= 1) && setIsSearchExpanded(!isSearchExpanded)}
           className="w-full p-5 flex items-center justify-between bg-slate-50 border-b border-slate-100"
         >
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
-              <i className="fas fa-search text-sm"></i>
+              <i className="fas fa-user-graduate text-sm"></i>
             </div>
-            <h3 className="text-sm font-bold text-slate-800">Pesquisar aluno</h3>
+            <h3 className="text-sm font-bold text-slate-800">
+              {initialStudentIds && initialStudentIds.length > 1 ? `Alunos Selecionados (${initialStudentIds.length})` : 'Pesquisar aluno'}
+            </h3>
           </div>
-          <i className={`fas fa-chevron-${isSearchExpanded ? 'up' : 'down'} text-slate-400`}></i>
+          {(!initialStudentIds || initialStudentIds.length <= 1) && (
+            <i className={`fas fa-chevron-${isSearchExpanded ? 'up' : 'down'} text-slate-400`}></i>
+          )}
         </button>
 
-        {isSearchExpanded && (
+        {initialStudentIds && initialStudentIds.length > 1 ? (
+          <div className="p-5 bg-orange-50/50 border-b border-orange-100">
+            <p className="text-xs text-orange-800 font-medium mb-3">
+              Esta ocorrência será registrada para <strong>{initialStudentIds.length} alunos</strong> selecionados na lista.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {initialStudentIds.slice(0, 8).map(id => {
+                const s = students.find(st => st.id === id);
+                return s ? (
+                  <span key={id} className="text-[10px] bg-white px-2.5 py-1 rounded-full border border-orange-200 text-orange-700 font-bold shadow-sm">
+                    {s.name}
+                  </span>
+                ) : null;
+              })}
+              {initialStudentIds.length > 8 && (
+                <span className="text-[10px] text-orange-600 font-bold self-center">+{initialStudentIds.length - 8} mais...</span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {isSearchExpanded && (
           <div className="p-5 space-y-4 animate-fade-in">
             <div className="grid grid-cols-1 gap-4">
               <div>
@@ -276,24 +312,26 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
             </div>
           </div>
         )}
-      </div>
 
-      {selectedStudent && !isSearchExpanded && (
-        <div className="bg-indigo-50 p-4 rounded-3xl border border-indigo-100 flex items-center space-x-4 animate-fade-in shadow-sm">
-          <img src={selectedStudent.profileImage} alt="" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
-          <div className="flex-1">
-            <h4 className="text-sm font-bold text-indigo-900">{selectedStudent.name}</h4>
-            <p className="text-xs font-bold text-indigo-600">{selectedStudent.grade} — Turma {selectedStudent.classroom}</p>
+        {selectedStudent && !isSearchExpanded && (
+          <div className="p-5 flex items-center space-x-4 bg-indigo-50/50 animate-fade-in">
+            <img 
+              src={selectedStudent.profileImage || DEFAULT_STUDENT_IMAGE} 
+              alt={selectedStudent.name} 
+              className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+            />
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-slate-800">{selectedStudent.name}</h3>
+              <p className="text-xs text-slate-500 font-medium">{selectedStudent.grade} - {selectedStudent.classroom}</p>
+            </div>
+            <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm">
+              <i className="fas fa-check"></i>
+            </div>
           </div>
-          <button 
-            type="button" 
-            onClick={() => setIsSearchExpanded(true)}
-            className="text-xs font-bold text-indigo-600 hover:underline"
-          >
-            Alterar
-          </button>
-        </div>
-      )}
+        )}
+      </>
+    )}
+  </div>
 
       {selectedStudent && isRecidivist && (
         <div className="bg-red-50 p-4 rounded-[1.5rem] border border-red-200 flex items-start space-x-3 animate-fade-in shadow-sm">

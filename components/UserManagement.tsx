@@ -37,18 +37,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onToggleStatus, 
       {/* Stats Summary */}
       <div className="flex space-x-4">
         <div className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-            <span className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Total de Usuários</span>
+            <span className="block text-[12px] text-slate-400 font-bold mb-1">Colaboradores</span>
             <span className="text-xl font-bold text-slate-800">{users.length}</span>
         </div>
         <div className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-            <span className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Ativos</span>
+            <span className="block text-[12px] text-slate-400 font-bold mb-1">Ativos</span>
             <span className="text-xl font-bold text-green-600">{users.filter(u => u.status === 'Ativo').length}</span>
         </div>
       </div>
 
       {/* Users List */}
       <div className="space-y-4">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Colaboradores Registrados</h3>
+        <h3 className="text-sm font-bold text-slate-400 tracking-widest px-1">Colaboradores</h3>
         
         {filteredUsers.length > 0 ? (
           filteredUsers.map(user => (
@@ -64,20 +64,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onToggleStatus, 
                     <h4 className={`font-bold text-slate-800 truncate leading-tight ${user.status === 'Inativo' ? 'text-slate-400' : ''}`}>
                         {user.name}
                     </h4>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                       user.status === 'Ativo' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {user.status}
                     </span>
                   </div>
                   <p className="text-xs text-indigo-600 font-semibold mt-0.5">{user.role}</p>
-                  <p className="text-[10px] text-slate-500 mt-1 italic">{user.lotacao}</p>
+                  <p className="text-[11px] text-slate-500 mt-1 italic">{user.lotacao}</p>
                 </div>
               </div>
               
               <div className="bg-slate-50 px-4 py-3 flex justify-between items-center border-t border-slate-100">
                 <div className="flex flex-col">
-                  <span className="text-[9px] text-slate-400 uppercase font-bold">Matrícula</span>
+                  <span className="text-[10px] text-slate-400 font-bold">Matrícula</span>
                   <span className="text-[11px] text-slate-700 font-mono">{user.matricula}</span>
                 </div>
                 

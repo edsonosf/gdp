@@ -34,6 +34,11 @@ export interface Student {
   profileImage?: string;
   birthDate: string;
   age?: number;
+  gender?: string;
+  cpf?: string;
+  matricula?: string;
+  signedForm?: boolean;
+  legalConsent?: boolean;
   responsibleName: string;
   relationship: string;
   otherRelationship?: string;
@@ -50,6 +55,9 @@ export interface Student {
   investigationDescription?: string;
   schoolNeed?: ('estrutura_fisica' | 'adaptacao_curricular' | 'atendimento_especializado')[];
   pedagogicalEvaluationType?: string;
+  schoolAcademicYear?: string;
+  manualInsert?: boolean;
+  status?: string;
 }
 
 export interface User {
@@ -85,8 +93,8 @@ export interface User {
 export interface AccessLog {
   timestamp: string;
   user_id: string;
-  event: 'user.login' | 'user.logout' | 'critical.action';
-  status: 'success' | 'failure';
+  event: string;
+  status: 'success' | 'failure' | 'Sucesso' | 'Erro';
   ip_address: string;
   user_agent: string;
   description?: string;
@@ -97,4 +105,20 @@ export interface AccessLog {
   };
 }
 
-export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'EDIT_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE';
+export interface LegalResponsible {
+  id: string;
+  name: string;
+  relationship: string;
+  otherRelationship?: string;
+  contactPhone: string;
+  backupPhone?: string;
+  landline?: string;
+  workPhone?: string;
+  email: string;
+  observations?: string;
+  profileImage?: string;
+  legalConsent: boolean;
+  linkedStudents?: Student[];
+}
+
+export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'EDIT_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE' | 'ACCESS_LOGS' | 'ADD_RESPONSIBLE';

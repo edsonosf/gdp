@@ -19,7 +19,7 @@ interface UserRegistrationFormProps {
 const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onRegister }) => {
   const [formData, setFormData] = useState({
     useGoogle: 'nao',
-    useSocialName: 'nao',
+    useSocialName: false,
     fullName: '',
     socialName: '',
     gender: '',
@@ -135,8 +135,8 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
   };
 
   const validate = () => {
-    if (formData.useSocialName === 'nao' && !formData.fullName) return "Nome Completo é obrigatório.";
-    if (formData.useSocialName === 'sim' && !formData.socialName) return "Nome Social é obrigatório.";
+    if (!formData.useSocialName && !formData.fullName) return "Nome Completo é obrigatório.";
+    if (formData.useSocialName && !formData.socialName) return "Nome Social é obrigatório.";
     if (!formData.gender) return "Identidade de Gênero é obrigatória.";
     if (!formData.birthDate) return "Data de Nascimento é obrigatória.";
     if (!formData.cpf) return "CPF é obrigatório para o login.";
@@ -159,8 +159,8 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
     }
 
     const userData: Omit<User, 'id' | 'status'> = {
-      name: formData.useSocialName === 'sim' ? formData.socialName : formData.fullName,
-      socialName: formData.useSocialName === 'sim' ? formData.socialName : '',
+      name: formData.useSocialName ? formData.socialName : formData.fullName,
+      socialName: formData.useSocialName ? formData.socialName : '',
       email: formData.email || null,
       cpf: formData.cpf,
       secretaria: formData.secretaria,
@@ -210,89 +210,89 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
             </button>
           </div>
           <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/*" />
-          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-2">Foto do Perfil</p>
+          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-2">FOTO DO PERFIL</p>
         </section>
 
         <section className="space-y-4">
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-            <label className="block text-sm font-bold text-slate-700 mb-3">Utiliza Nome Social?</label>
-            <div className="flex space-x-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="useSocialName" value="sim" checked={formData.useSocialName === 'sim'} onChange={handleInputChange} className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-medium text-slate-600">Sim</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="useSocialName" value="nao" checked={formData.useSocialName === 'nao'} onChange={handleInputChange} className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-medium text-slate-600">Não</span>
-              </label>
-            </div>
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-center">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" name="useSocialName" checked={formData.useSocialName} onChange={handleInputChange} className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+              <span className="text-sm font-bold text-slate-700">Utilizar Nome Social.</span>
+            </label>
           </div>
 
           <div className="animate-fade-in">
             <label className="block text-sm font-semibold text-slate-700 mb-1">
-              {formData.useSocialName === 'sim' ? 'Nome Social *' : 'Nome Completo *'}
+              {formData.useSocialName ? 'Nome Social *' : 'Nome Completo *'}
             </label>
             <input 
               type="text" 
-              name={formData.useSocialName === 'sim' ? 'socialName' : 'fullName'} 
-              value={formData.useSocialName === 'sim' ? formData.socialName : formData.fullName} 
+              name={formData.useSocialName ? 'socialName' : 'fullName'} 
+              value={formData.useSocialName ? formData.socialName : formData.fullName} 
               onChange={handleInputChange} 
               className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-indigo-500 outline-none font-medium" 
               required 
-              placeholder={formData.useSocialName === 'sim' ? "Como deseja ser chamado" : "Nome civil completo"}
+              placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Identidade de Gênero</label>
-            <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
-              <option value="">Selecione</option>
-              {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Identidade de gênero</label>
+              <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
+                <option value="">Selecione</option>
+                {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Data de nascimento
+              </label>
+              <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Data de nascimento
-            </label>
-            <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
-          </div>
+        <section className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">CPF *</label>
             <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="999.999.999-99" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Celular de contato *</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  name="phone" 
-                  value={formData.phone} 
-                  onChange={handleInputChange} 
-                  placeholder="(99) 9 9999-9999" 
-                  className="w-full p-3 pr-10 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium focus:ring-2 focus:ring-indigo-500" 
-                  required 
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
-                  <i className="fab fa-whatsapp text-lg"></i>
-                </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Matrícula</label>
+            <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} placeholder="Sem dígito" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" required />
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Celular de contato *</label>
+            <div className="relative">
+              <input 
+                type="text" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleInputChange} 
+                placeholder="(99) 9 9999-9999" 
+                className="w-full p-3 pr-10 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium focus:ring-2 focus:ring-indigo-500" 
+                required 
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
+                <i className="fab fa-whatsapp text-lg"></i>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Celular para recados</label>
-              <input type="text" name="phone2" value={formData.phone2} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail</label>
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Celular para recados</label>
+            <input type="text" name="phone2" value={formData.phone2} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
           </div>
         </section>
 
         <section className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail *</label>
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+          </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Secretaria municipal de origem</label>
             <select name="secretaria" value={formData.secretaria} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
@@ -307,19 +307,10 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
                 {LOTACAO_EDUCACAO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Matrícula *</label>
-              <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} placeholder="Sem dígito" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" required />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Cargo</label>
-              <input type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} placeholder="Ex: Professor I" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
-            </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Cargo</label>
+            <input type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} placeholder="Ex: Professor" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
           </div>
-        </section>
-
-        <section className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Função</label>
             <select name="funcao" value={formData.funcao} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
@@ -327,7 +318,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
               {FUNCAO_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
+        </section>
 
+        <section className="space-y-4">
           {formData.funcao === 'Outra Função' && (
             <div className="animate-fade-in">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Especifique sua função *</label>
@@ -360,10 +353,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4">
           <div className="p-4 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Carga Horária</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Carga horária</label>
               <div className="flex flex-wrap gap-2">
                 {CARGA_OPTIONS.map(o => (
                   <button key={o} type="button" onClick={() => handleToggle(selectedCarga, setSelectedCarga, o)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${selectedCarga.includes(o) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
@@ -420,22 +412,21 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
             </div>
           </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Turno de Trabalho</label>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {TURNO_OPTIONS.map(o => (
-                  <button key={o} type="button" onClick={() => handleToggle(selectedTurno, setSelectedTurno, o)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${selectedTurno.includes(o) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                    {o}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Turno de trabalho</label>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {TURNO_OPTIONS.map(o => (
+                <button key={o} type="button" onClick={() => handleToggle(selectedTurno, setSelectedTurno, o)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${selectedTurno.includes(o) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                  {o}
+                </button>
+              ))}
             </div>
           </div>
         </section>
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">Informações Adicionais Relevantes</label>
-          <textarea name="additionalInfo" value={formData.additionalInfo} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none h-24 resize-none focus:ring-indigo-500 font-medium text-sm" placeholder="Alguma observação importante?"></textarea>
+          <textarea name="additionalInfo" value={formData.additionalInfo} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none h-24 resize-none focus:ring-indigo-500 font-medium text-sm" placeholder="Digite aqui..."></textarea>
         </div>
 
         <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start space-x-3">

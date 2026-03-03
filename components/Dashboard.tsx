@@ -14,6 +14,7 @@ interface DashboardProps {
   onViewMonitoring?: () => void;
   onNavigate?: (view: ViewState) => void;
   isAdmin?: boolean;
+  activeStudentsCount?: number;
   hasNewMessage?: boolean;
   onOpenMessages?: () => void;
   newRegisteredUser?: User | null;
@@ -30,6 +31,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onViewMonitoring,
   onNavigate,
   isAdmin = false,
+  activeStudentsCount = 0,
   hasNewMessage = false,
   onOpenMessages,
   newRegisteredUser
@@ -41,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
           <span className="text-slate-400 text-xs font-medium mb-1">Total de alunos</span>
-          <span className="text-2xl font-bold text-slate-800">{students.length}</span>
+          <span className="text-2xl font-bold text-slate-800">{activeStudentsCount || students.length}</span>
           <div className="text-green-500 text-[10px] mt-1"><i className="fas fa-caret-up mr-1"></i> Ativos</div>
         </div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
@@ -100,31 +102,31 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-users text-sm"></i>
                 </div>
-                <span className="text-[10px] font-bold leading-tight text-blue-800">Lista de alunos</span>
+                <span className="text-[11px] font-bold leading-tight text-blue-800">Alunos</span>
             </div>
             <div onClick={() => onNavigate && onNavigate('MY_PROFILE')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 transition-colors">
                 <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-user-circle text-sm"></i>
                 </div>
-                <span className="text-[10px] font-bold leading-tight text-indigo-800">Meu perfil</span>
+                <span className="text-[11px] font-bold leading-tight text-indigo-800">Perfil</span>
             </div>
             <div onClick={onAddOccurrence} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-orange-50 transition-colors">
                 <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-clipboard-list text-sm"></i>
                 </div>
-                <span className="text-[10px] font-bold leading-tight text-orange-800">Registrar ocorrência</span>
+                <span className="text-[11px] font-bold leading-tight text-orange-800">Ocorrência</span>
             </div>
             <div onClick={onOpenMessages} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-slate-50 relative">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${hasNewMessage ? 'bg-indigo-600 text-white animate-blink' : 'bg-purple-100 text-purple-600'}`}>
                     <i className="fas fa-comments text-sm"></i>
                 </div>
-                <span className="text-[10px] font-medium leading-tight">Mensagens</span>
+                <span className="text-[11px] font-medium leading-tight">Mensagens</span>
             </div>
             <div onClick={() => onViewMonitoring && onViewMonitoring()} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-emerald-50 transition-colors">
                 <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-file-invoice text-sm"></i>
                 </div>
-                <span className="text-[10px] font-bold leading-tight text-emerald-800">Acompanhar ocorrências</span>
+                <span className="text-[11px] font-bold leading-tight text-emerald-800">Acompanhar</span>
             </div>
 
             {isAdmin && (
@@ -133,21 +135,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
                         <i className="fas fa-user-plus text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-bold leading-tight text-blue-800">Cadastro de aluno</span>
+                    <span className="text-[11px] font-bold leading-tight text-blue-800">Aluno</span>
                 </div>
 
                 <div onClick={onAnalyzeOccurrences} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
                     <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
                         <i className="fas fa-magnifying-glass-chart text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-bold leading-tight text-indigo-700">Análise de ocorrências</span>
+                    <span className="text-[11px] font-bold leading-tight text-indigo-700">Análise</span>
                 </div>
 
-                <div onClick={onSystemManagement} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
+                <div onClick={() => onNavigate && onNavigate('SYSTEM_MANAGEMENT')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
                     <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
                         <i className="fas fa-gears text-sm"></i>
                     </div>
-                    <span className="text-[10px] font-bold leading-tight text-purple-700">Sistema</span>
+                    <span className="text-[11px] font-bold leading-tight text-purple-700">Sistema</span>
                 </div>
               </>
             )}

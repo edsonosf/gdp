@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Student, Occurrence, ViewState, User, AccessLog } from './types';
-import { INITIAL_STUDENTS, INITIAL_OCCURRENCES, DEFAULT_STUDENT_IMAGE } from './constants';
+import { Student, Occurrence, ViewState, User, AccessLog, LegalResponsible } from './types';
+import { DEFAULT_STUDENT_IMAGE } from './constants';
 import Layout from './components/Layout';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
@@ -12,6 +12,7 @@ import UserManagement from './components/UserManagement';
 import Reports from './components/Reports';
 import UserEditForm from './components/UserEditForm';
 import StudentRegistrationForm from './components/StudentRegistrationForm';
+import ResponsibleRegistrationForm from './components/ResponsibleRegistrationForm';
 import PendingOccurrences from './components/PendingOccurrences';
 import SystemManagement from './components/SystemManagement';
 import OccurrenceMonitoring from './components/OccurrenceMonitoring';
@@ -19,50 +20,55 @@ import NewOccurrenceMessage from './components/NewOccurrenceMessage';
 import IndividualReportSearch from './components/IndividualReportSearch';
 import StudentDefense from './components/StudentDefense';
 import Formalization from './components/Formalization';
-
-const MOCK_USERS: User[] = [
-  {
-    id: 'u_user_request',
-    name: 'Administrador',
-    role: 'Administrador do Systema',
-    email: 'administrador@adm.com.br',
-    cpf: '123.456.789-00',
-    status: 'Ativo',
-    secretaria: 'Secretaria de Educação',
-    lotacao: 'Escola Cívico-Militar Rodolfo Teófilo',
-    matricula: '102030',
-    phone: '85996904763',
-    profileImage: 'https://i.pravatar.cc/150?u=gestor',
-    isSystemAdmin: true
-  },
-  {
-    id: 'u1',
-    name: 'Edson Oliveira dos Santos Filho',
-    role: 'Coordenador Pedagógico',
-    email: 'edson.oliveira@escola.ce.gov.br',
-    cpf: '408.570.853-87',
-    status: 'Ativo',
-    secretaria: 'Secretaria de Educação',
-    lotacao: 'Escola Cívico-Militar Rodolfo Teófilo',
-    matricula: '45678',
-    phone: '85996904763',
-    profileImage: 'https://i.pravatar.cc/150?u=edson',
-    isSystemAdmin: true
-  }
-];
+import AccessLogsView from './components/AccessLogsView';
+import StudentList from './components/StudentList';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('LOGIN');
   const [students, setStudents] = useState<Student[]>([]);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [unreadOccurrenceIds, setUnreadOccurrenceIds] = useState<string[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const adminCount = useMemo(() => users.filter(u => u.isSystemAdmin).length, [users]);
+
+  const fetchData = useCallback(async () => {
+    setIsInitialLoading(true);
+    setApiError(null);
+    try {
+      const [studentsRes, occurrencesRes, usersRes, activeCountRes] = await Promise.all([
+        fetch('/api/students'),
+        fetch('/api/occurrences'),
+        fetch('/api/users'),
+        fetch('/api/stats/active-students')
+      ]);
+
+      if (!studentsRes.ok || !occurrencesRes.ok || !usersRes.ok) {
+        throw new Error("Falha ao conectar com o servidor. Verifique se o banco de dados está configurado.");
+      }
+
+      setStudents(await studentsRes.json());
+      setOccurrences(await occurrencesRes.json());
+      
+      const usersList = await usersRes.json();
+      setUsers(usersList);
+
+      const activeCountData = await activeCountRes.json();
+      setActiveStudentsCount(activeCountData.total);
+    } catch (err) {
+      console.error("Failed to fetch data from API:", err);
+      setApiError((err as Error).message);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, []);
 
   // Helper para inferir dispositivo
   const getDeviceInfo = () => {
@@ -89,48 +95,6 @@ const App: React.FC = () => {
 
   // Inicialização do Banco de Dados via API
   useEffect(() => {
-    const fetchData = async () => {
-      setIsInitialLoading(true);
-      setApiError(null);
-      try {
-        const [studentsRes, occurrencesRes, usersRes] = await Promise.all([
-          fetch('/api/students'),
-          fetch('/api/occurrences'),
-          fetch('/api/users')
-        ]);
-
-        if (!studentsRes.ok || !occurrencesRes.ok || !usersRes.ok) {
-          throw new Error("Falha ao conectar com o servidor. Verifique se o banco de dados está configurado.");
-        }
-
-        setStudents(await studentsRes.json());
-        setOccurrences(await occurrencesRes.json());
-        
-        const usersList = await usersRes.json();
-        setUsers(usersList);
-        
-        // Verificar Sessão
-        const savedCurrentUser = localStorage.getItem('educontrol_current_user');
-        if (savedCurrentUser) {
-          const user = JSON.parse(savedCurrentUser);
-          const freshUser = usersList.find((u: User) => u.id === user.id);
-          
-          if (freshUser && freshUser.status === 'Ativo') {
-            setCurrentUser(freshUser);
-            setView('DASHBOARD');
-          } else {
-            localStorage.removeItem('educontrol_current_user');
-            setView('LOGIN');
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch data from API:", err);
-        setApiError((err as Error).message);
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
-
     fetchData();
 
     // 4. Notificações (IDs das ocorrências não lidas ainda no localStorage por simplicidade)
@@ -143,11 +107,11 @@ const App: React.FC = () => {
   const recordLog = useCallback(async (event: AccessLog['event'], status: AccessLog['status'], userId?: string, description?: string) => {
     const newLog: AccessLog = {
       timestamp: new Date().toISOString(),
-      user_id: userId || currentUser?.cpf || 'anonymous',
+      user_id: userId || currentUser?.id || 'anonymous',
       event,
       status,
       description,
-      ip_address: '192.168.1.' + Math.floor(Math.random() * 255), // Mock IP
+      ip_address: '', // Will be handled by server or left empty
       user_agent: navigator.userAgent,
       device_info: getDeviceInfo()
     };
@@ -163,21 +127,19 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
-  // Efeitos de Persistência Geral (Removidos pois agora usamos API)
+  // Efeitos de Persistência Geral (Removidos para usar apenas Banco de Dados)
   useEffect(() => {
-    localStorage.setItem('educontrol_unread_ids', JSON.stringify(unreadOccurrenceIds));
+    // Apenas em memória para esta sessão
   }, [unreadOccurrenceIds]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    localStorage.setItem('educontrol_current_user', JSON.stringify(user));
-    recordLog('user.login', 'success', user.cpf);
+    recordLog('user.login', 'success', user.id);
     setView('DASHBOARD');
   };
 
   const handleLogout = useCallback(() => {
     recordLog('user.logout', 'success');
-    localStorage.removeItem('educontrol_current_user');
     setCurrentUser(null);
     setView('LOGIN');
   }, [recordLog]);
@@ -186,7 +148,8 @@ const App: React.FC = () => {
     const newUser: User = {
       ...userData,
       id: crypto.randomUUID(),
-      status: 'Inativo'
+      status: 'Inativo',
+      password: userData.phone.replace(/\D/g, '') // Senha padrão é o telefone sem máscara
     };
     
     try {
@@ -198,7 +161,7 @@ const App: React.FC = () => {
       
       if (res.ok) {
         setUsers(prev => [...prev, newUser]);
-        recordLog('critical.action', 'success', userData.cpf, 'Novo cadastro de colaborador realizado');
+        recordLog('critical.action', 'success', newUser.id, 'Novo cadastro de colaborador realizado');
         alert('Cadastro realizado com sucesso! Sua conta está "Desativada" e aguarda ativação pelo administrador.');
         setView('LOGIN');
       } else {
@@ -271,6 +234,7 @@ const App: React.FC = () => {
         setOccurrences(prev => prev.map(occ => 
           occ.id === id ? { ...occ, status: 'Resolvida' as const } : occ
         ));
+        recordLog('critical.action', 'success', undefined, `Ocorrência resolvida: ${id}`);
         alert("Ocorrência marcada como resolvida!");
       }
     } catch (err) {
@@ -418,6 +382,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRegisterResponsible = async (data: Omit<LegalResponsible, 'id'>) => {
+    try {
+      const res = await fetch('/api/responsibles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        recordLog('critical.action', 'success', undefined, `Responsável cadastrado: ${data.name}`);
+        alert('Responsável cadastrado com sucesso!');
+        setView('STUDENT_LIST');
+        // Refresh students to reflect new responsible linking if any
+        const studentsRes = await fetch('/api/students');
+        if (studentsRes.ok) {
+          const studentsData = await studentsRes.json();
+          setStudents(studentsData);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to register responsible:", err);
+      alert("Erro ao cadastrar responsável.");
+    }
+  };
+
   const handleMarkAsRead = (id: string) => {
     const remaining = unreadOccurrenceIds.filter(unreadId => unreadId !== id);
     setUnreadOccurrenceIds(remaining);
@@ -483,6 +471,7 @@ const App: React.FC = () => {
         return <Dashboard 
           students={students} 
           occurrences={occurrences} 
+          activeStudentsCount={activeStudentsCount}
           isAdmin={currentUser?.isSystemAdmin}
           hasNewMessage={unreadOccurrenceIds.length > 0 && !!currentUser?.isSystemAdmin}
           onOpenMessages={() => {
@@ -529,62 +518,18 @@ const App: React.FC = () => {
           />
         );
       case 'SYSTEM_MANAGEMENT':
-        return <SystemManagement onRecordLog={recordLog} />;
+        return <SystemManagement onRecordLog={recordLog} currentUser={currentUser} onNavigate={setView} onRefreshData={fetchData} />;
+      case 'ACCESS_LOGS':
+        return <AccessLogsView onBack={() => setView('SYSTEM_MANAGEMENT')} currentUser={currentUser} />;
       case 'STUDENT_LIST':
         return (
-          <div className="p-4 space-y-4 relative min-h-full">
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i className="fas fa-search"></i></span>
-              <input type="text" placeholder="Buscar por nome ou turma..." className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <div className="space-y-3 pb-20">
-              {filteredStudents.map(student => (
-                <div key={student.id} className="flex items-center space-x-2">
-                  <button onClick={() => { setSelectedStudent(student); setView('STUDENT_DETAIL'); }} className="flex-1 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4 hover:border-indigo-300 transition-all active:scale-[0.98]">
-                    <img src={student.profileImage || DEFAULT_STUDENT_IMAGE} alt={student.name} className="w-12 h-12 rounded-full object-cover border-border-slate-100" />
-                    <div className="flex-1 text-left">
-                      <h3 className="font-bold text-slate-800">{student.name}</h3>
-                      <p className="text-xs text-slate-500 font-medium">{student.grade} - {student.classroom}</p>
-                    </div>
-                    <i className="fas fa-chevron-right text-slate-300"></i>
-                  </button>
-                  {currentUser?.isSystemAdmin && (
-                    <div className="flex flex-col space-y-1">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedStudent(student);
-                          setView('EDIT_STUDENT');
-                        }}
-                        className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center hover:bg-indigo-100 transition-colors active:scale-90"
-                        title="Editar Aluno"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteStudent(student.id, student.name);
-                        }}
-                        className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-100 transition-colors active:scale-90"
-                        title="Excluir Aluno"
-                      >
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {currentUser?.isSystemAdmin && (
-              <button 
-                onClick={() => setView('ADD_STUDENT')}
-                className="fixed bottom-24 right-4 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center text-xl z-30 active:scale-90 transition-transform"
-              >
-                <i className="fas fa-user-plus"></i>
-              </button>
-            )}
-          </div>
+          <StudentList 
+            currentUser={currentUser} 
+            onNavigate={(v, ids) => {
+              if (ids) setSelectedStudentIds(ids);
+              setView(v);
+            }} 
+          />
         );
       case 'STUDENT_DETAIL':
         return selectedStudent ? <StudentDetail student={selectedStudent} occurrences={occurrences} /> : null;
@@ -594,6 +539,8 @@ const App: React.FC = () => {
         return selectedStudent ? <Formalization student={selectedStudent} onBack={() => setView('PENDING_OCCURRENCES')} /> : null;
       case 'ADD_STUDENT':
         return <StudentRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} />;
+      case 'ADD_RESPONSIBLE':
+        return <ResponsibleRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} />;
       case 'EDIT_STUDENT':
         return (
           <StudentRegistrationForm 
@@ -605,13 +552,22 @@ const App: React.FC = () => {
           />
         );
       case 'ADD_OCCURRENCE':
-        return <OccurrenceForm students={students} occurrences={occurrences} currentUser={currentUser} onSave={handleAddOccurrence} />;
+        return (
+          <OccurrenceForm 
+            students={students} 
+            occurrences={occurrences} 
+            currentUser={currentUser}
+            initialStudentId={selectedStudent?.id}
+            initialStudentIds={selectedStudentIds}
+            onSave={handleAddOccurrence}
+          />
+        );
       case 'USER_MANAGEMENT':
         return <UserManagement users={users} onToggleStatus={handleToggleUserStatus} onToggleAdmin={handleToggleAdmin} onEdit={(u) => { setEditingUser(u); setView('EDIT_USER'); }} />;
       case 'EDIT_USER':
-        return editingUser ? <UserEditForm user={editingUser} occurrences={occurrences} onBack={() => setView('USER_MANAGEMENT')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={true} /> : null;
+        return editingUser ? <UserEditForm user={editingUser} occurrences={occurrences} onBack={() => setView('USER_MANAGEMENT')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={true} adminCount={adminCount} /> : null;
       case 'MY_PROFILE':
-        return currentUser ? <UserEditForm user={currentUser} occurrences={occurrences} onBack={() => setView('DASHBOARD')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={false} /> : null;
+        return currentUser ? <UserEditForm user={currentUser} occurrences={occurrences} onBack={() => setView('DASHBOARD')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={false} adminCount={adminCount} /> : null;
       case 'REPORTS':
         return <Reports occurrences={occurrences} students={students} onIndividualReportSearch={() => setView('INDIVIDUAL_REPORT_SEARCH')} />;
       case 'INDIVIDUAL_REPORT_SEARCH':
@@ -627,6 +583,7 @@ const App: React.FC = () => {
       case 'STUDENT_LIST': return 'Lista de Alunos';
       case 'STUDENT_DETAIL': return 'Histórico do Aluno';
       case 'ADD_STUDENT': return 'Cadastro de Aluno';
+      case 'ADD_RESPONSIBLE': return 'Cadastro de Responsável';
       case 'EDIT_STUDENT': return 'Editar Cadastro';
       case 'ADD_OCCURRENCE': return 'Nova Ocorrência';
       case 'USER_REGISTRATION': return 'Cadastro de Sistema';
@@ -651,7 +608,7 @@ const App: React.FC = () => {
       setView('USER_MANAGEMENT');
     } else if (view === 'MY_PROFILE') {
       setView('DASHBOARD');
-    } else if (view === 'ADD_STUDENT' || view === 'EDIT_STUDENT') {
+    } else if (view === 'ADD_STUDENT' || view === 'EDIT_STUDENT' || view === 'ADD_RESPONSIBLE') {
       setView('STUDENT_LIST');
     } else if (view === 'STUDENT_DEFENSE' || view === 'FORMALIZATION') {
       setView('PENDING_OCCURRENCES');
@@ -675,7 +632,7 @@ const App: React.FC = () => {
       setView={setView} 
       title={getTitle()} 
       isAdmin={currentUser?.isSystemAdmin} 
-      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE'].includes(view)} 
+      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE'].includes(view)} 
       onBack={handleBack}
       onLogout={handleLogout}
     >

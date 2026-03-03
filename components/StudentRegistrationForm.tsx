@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Student } from '../types';
-import { GRADE_OPTIONS } from '../constants';
+import { GRADE_OPTIONS, GENDER_OPTIONS } from '../constants';
 
 interface StudentRegistrationFormProps {
   students: Student[];
@@ -9,13 +9,6 @@ interface StudentRegistrationFormProps {
   onRegister: (student: Omit<Student, 'id'> | Student) => void;
   onDelete?: (id: string, name: string) => void;
 }
-
-const RELATIONSHIP_OPTIONS = [
-  "Filho(a)", "Pai", "Mãe", "Cônjuge", "Companheiro(a) do Pai", "Companheiro(a) do Mãe",
-  "Irmão", "Irmã", "Avô Paterno/Materno", "Avó Paterno/Materno", "Neto(a)", "Tio", "Tia",
-  "Sobrinho(a) Pai/Mãe", "Sogro(a) Pai/Mãe", "Genro Pai/Mãe", "Nora Pai/Mãe", "Cunhado(a)",
-  "Enteado(a)", "Padrasto", "Madrasta", "Primo(a)", "Outro Vínculo"
-];
 
 const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ students, initialData, onBack, onRegister, onDelete }) => {
   const maskPhone = (value: string) => {
@@ -31,18 +24,15 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
     name: initialData?.name || '',
     socialName: initialData?.socialName || '',
     birthDate: initialData?.birthDate || '',
+    gender: initialData?.gender || '',
+    cpf: initialData?.cpf || '',
+    matricula: initialData?.matricula || '',
+    signedForm: initialData?.signedForm || false,
+    legalConsent: initialData?.legalConsent || false,
     grade: initialData?.grade || '',
     classroom: initialData?.classroom || '',
     room: initialData?.room || '',
     turn: (initialData?.turn as any) || '',
-    responsibleName: initialData?.responsibleName || '',
-    relationship: initialData?.relationship || '',
-    otherRelationship: initialData?.otherRelationship || '',
-    contactPhone: initialData?.contactPhone || '',
-    backupPhone: initialData?.backupPhone || '',
-    landline: initialData?.landline || '',
-    workPhone: initialData?.workPhone || '',
-    email: initialData?.email || '',
     isAEE: initialData?.isAEE || false,
     pcdStatus: (initialData?.pcdStatus as any) || '',
     cid: initialData?.cid || '',
@@ -54,15 +44,18 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
 
   const [age, setAge] = useState<number | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.profileImage || null);
-  const [responsibleFound, setResponsibleFound] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const maskDate = (value: string) => {
     return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1').slice(0, 10);
   };
 
-  const maskLandline = (value: string) => {
-    return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2').slice(0, 14);
+  const maskCPF = (value: string) => {
+    return value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').slice(0, 14);
+  };
+
+  const maskMatricula = (value: string) => {
+    return value.replace(/\D/g, '');
   };
 
   const calculateAge = (dob: string) => {
@@ -90,36 +83,21 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
     }
   }, [formData.birthDate]);
 
-  useEffect(() => {
-    if (formData.responsibleName.length > 3) {
-      const match = students.find(s => 
-        s.responsibleName.toLowerCase().trim() === formData.responsibleName.toLowerCase().trim()
-      );
-      if (match && !responsibleFound) {
-        setResponsibleFound(true);
-        setFormData(prev => ({
-          ...prev,
-          relationship: match.relationship,
-          otherRelationship: match.otherRelationship || '',
-          contactPhone: match.contactPhone,
-          backupPhone: match.backupPhone || '',
-          landline: match.landline || '',
-          email: match.email
-        }));
-      } else if (!match) {
-        setResponsibleFound(false);
-      }
-    } else {
-      setResponsibleFound(false);
-    }
-  }, [formData.responsibleName, students]);
+  const generateClassName = () => {
+    const { grade, classroom, turn } = formData;
+    if (!grade || !classroom || !turn) return '';
+    const currentYear = new Date().getFullYear();
+    const turnLetter = turn.charAt(0).toUpperCase();
+    return `${grade}ANO${classroom.toUpperCase()}${turnLetter}${currentYear}`;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     let finalValue = value;
     if (name === 'birthDate') finalValue = maskDate(value);
     if (name === 'contactPhone' || name === 'backupPhone') finalValue = maskPhone(value);
-    if (name === 'landline' || name === 'workPhone') finalValue = maskLandline(value);
+    if (name === 'cpf') finalValue = maskCPF(value);
+    if (name === 'matricula') finalValue = maskMatricula(value);
     if (type === 'checkbox') finalValue = (e.target as HTMLInputElement).checked as any;
     setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
@@ -141,6 +119,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
     
     const studentData = {
       ...formData,
+      classroom: generateClassName() || formData.classroom,
       name: formData.name,
       age: age || 0,
       profileImage: photoPreview || `https://i.pravatar.cc/150?u=${formData.name}`
@@ -171,54 +150,100 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
           </div>
           <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/*" />
         </section>
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <label className="text-sm font-bold text-slate-700">Utiliza nome social?</label>
-            <input type="checkbox" name="useSocialName" checked={formData.useSocialName} onChange={handleInputChange} className="w-5 h-5 text-indigo-600 rounded" />
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-center mb-4">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" name="useSocialName" checked={formData.useSocialName} onChange={handleInputChange} className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+              <span className="text-xs font-bold text-slate-600">Utilizar Nome Social</span>
+            </label>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Nome completo *</label>
-            <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Digite o nome civil" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
-          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">
+                {formData.useSocialName ? 'Nome Social *' : 'Nome Completo *'}
+              </label>
 
-          {formData.useSocialName && (
-            <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Nome social *</label>
-              <input type="text" name="socialName" value={formData.socialName} onChange={handleInputChange} placeholder="Como o aluno deseja ser chamado" className="w-full p-4 border border-indigo-200 rounded-2xl bg-indigo-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+              {formData.useSocialName && (
+                <div className="flex items-start space-x-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 animate-fade-in my-4">
+                  <input type="checkbox" name="signedForm" checked={formData.signedForm} onChange={handleInputChange} className="mt-1 w-5 h-5 text-slate-600 rounded" />
+                  <label className="text-xs font-medium text-slate-500 leading-tight">
+                    O Formulário de requerimento foi assinado pelos responsáveis para a utilização do nome social nesta instituição.
+                  </label>
+                </div>
+              )}
+
+              <input 
+                type="text" 
+                name={formData.useSocialName ? "socialName" : "name"} 
+                value={formData.useSocialName ? formData.socialName : formData.name} 
+                onChange={handleInputChange} 
+                className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" 
+                required 
+                placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
+              />
             </div>
-          )}
-        </section>
-
-        <section>
-          <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Data de nascimento *</label>
-          <div className="flex items-center space-x-4">
-            <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-44 p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
-            {age !== null && <span className="text-sm font-bold text-slate-700">Idade: {age} anos</span>}
           </div>
-        </section>
 
-        <section className="space-y-4">
+        <section className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Série / ano *</label>
-            <select name="grade" value={formData.grade} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required>
-              <option value="">Selecione</option>
-              {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Identidade de gênero</label>
+            <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
+              <option value=""></option>
+              {GENDER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">CPF</label>
+            <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center space-x-2 mb-1 ml-1">
+              <label className="block text-xs font-bold text-slate-500">Dt. Nasc.*</label>
+              {age !== null && <span className="text-xs font-bold text-blue-500">( {age} Anos )</span>}
+            </div>
+            <div className="flex flex-col space-y-1">
+              <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Matrícula</label>
+            <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+          </div>
+        </section>
+
+        <section className="space-y-4 p-5 bg-slate-50 rounded-3xl border border border-blue-100">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xs font-bold text-slate-500 tracking-wider">Ensino Fundamental</h3>
+            {generateClassName() && (
+              <span className="text-xs font-black text-blue-600 tracking-widest bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                {generateClassName()}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Turma *</label>
-              <input type="text" name="classroom" value={formData.classroom} onChange={handleInputChange} placeholder="A" maxLength={5} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 text-sm font-medium" required />
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Ano *</label>
+              <select name="grade" value={formData.grade} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required>
+                <option value="">Selecione</option>
+                {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Sala</label>
-              <input type="text" name="room" value={formData.room} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 text-sm font-medium" />
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Turma *</label>
+              <input type="text" name="classroom" value={formData.classroom} onChange={handleInputChange} placeholder="A" maxLength={5} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" required />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Sala</label>
+              <input type="text" name="room" value={formData.room} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Turno *</label>
-              <select name="turn" value={formData.turn} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 text-sm font-medium" required>
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Turno *</label>
+              <select name="turn" value={formData.turn} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" required>
                 <option value=""></option>
                 <option value="Manhã">Manhã</option>
                 <option value="Tarde">Tarde</option>
@@ -229,136 +254,51 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
           </div>
         </section>
 
-        <section className="space-y-4 p-4 bg-indigo-50/50 rounded-3xl border border-indigo-100">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-[10px] font-black text-indigo-900">Dados do responsável</h3>
-            {responsibleFound && <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Dados importados</span>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Responsável pelo aluno *</label>
-            <input type="text" name="responsibleName" value={formData.responsibleName} onChange={handleInputChange} placeholder="Nome do tutor legal" className="w-full p-4 border border-indigo-100 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Grau de parentesco *</label>
-            <select name="relationship" value={formData.relationship} onChange={handleInputChange} className="w-full p-4 border border-indigo-100 rounded-2xl bg-white text-sm font-medium" required>
-              <option value="">Selecione o vínculo</option>
-              {RELATIONSHIP_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-500 ml-1">Celular de contato *</label>
-              <div className="relative">
-                <input type="text" name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 pr-10 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"><i className="fab fa-whatsapp text-lg"></i></div>
-              </div>
+        <section className="space-y-4 p-5 bg-blue-50/50 rounded-3xl border border-blue-100">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-sm">
+              <i className="fas fa-universal-access text-sm"></i>
             </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-500 ml-1">Celular para recados</label>
-              <input type="text" name="backupPhone" value={formData.backupPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium" />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-500 ml-1">Telefone fixo</label>
-                <input type="text" name="landline" value={formData.landline} onChange={handleInputChange} placeholder="(99) 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium" />
-              </div>
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-500 ml-1">Telefone do trabalho</label>
-                <input type="text" name="workPhone" value={formData.workPhone} onChange={handleInputChange} placeholder="(99) 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-500 ml-1">E-mail *</label>
-              <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium" required />
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4 p-5 bg-blue-50/50 rounded-3xl border border-blue-100 animate-fade-in">
-          <div className="flex flex-col mb-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-sm">
-                <i className="fas fa-universal-access text-sm"></i>
-              </div>
-              <h3 className="text-xs font-bold text-slate-500 tracking-wider">Aluno PcD (Pessoa com Deficiência)</h3>
-            </div>
+            <h3 className="text-xs font-bold text-slate-500 tracking-wider">Aluno PcD (Pessoa com Deficiência)</h3>
           </div>
 
           <div className="flex items-center justify-between p-3 bg-white rounded-2xl border border-blue-100 shadow-sm">
-            <label className="text-sm text-slate-700">Atendimento Educacional Especializado (AEE)</label>
-            <input 
-              type="checkbox" 
-              name="isAEE" 
-              checked={formData.isAEE} 
-              onChange={handleInputChange} 
-              className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" 
-            />
+            <label className="text-xs font-bold text-blue-800">Atendido pelo AEE</label>
+            <input type="checkbox" name="isAEE" checked={formData.isAEE} onChange={handleInputChange} className="w-5 h-5 text-blue-800 rounded focus:ring-blue-500" />
           </div>
 
           {formData.isAEE && (
             <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-white rounded-2xl border border-blue-100 shadow-sm space-y-3">
-                <h4 className="text-[10px] font-black text-blue-800">Situação do Aluno</h4>
+                <h4 className="text-xs font-bold text-blue-800">Situação do Aluno</h4>
                 <div className="flex items-center space-x-6">
                   <label className="flex items-center space-x-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="pcdStatus" 
-                      value="com_laudo" 
-                      checked={formData.pcdStatus === 'com_laudo'} 
-                      onChange={handleInputChange} 
-                      className="w-4 h-4 text-blue-600" 
-                    />
-                    <span className="text-sm font-medium text-slate-600">Com Laudo</span>
+                    <input type="radio" name="pcdStatus" value="com_laudo" checked={formData.pcdStatus === 'com_laudo'} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-medium text-slate-600">Laudo</span>
                   </label>
                   <label className="flex items-center space-x-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="pcdStatus" 
-                      value="sob_investigacao" 
-                      checked={formData.pcdStatus === 'sob_investigacao'} 
-                      onChange={handleInputChange} 
-                      className="w-4 h-4 text-blue-600" 
-                    />
-                    <span className="text-sm font-medium text-slate-600">Sob investigação</span>
+                    <input type="radio" name="pcdStatus" value="sob_investigacao" checked={formData.pcdStatus === 'sob_investigacao'} onChange={handleInputChange} className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-medium text-slate-600">Investigação</span>
                   </label>
                 </div>
 
                 {formData.pcdStatus === 'com_laudo' && (
                   <div className="animate-fade-in pt-2">
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Classificação Internacional de Doenças (CID)</label>
-                    <textarea 
-                      name="cid" 
-                      value={formData.cid} 
-                      onChange={handleInputChange} 
-                      rows={3} 
-                      className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"
-                    ></textarea>
+                    <label className="text-xs font-bold text-blue-800 mb-1 ml-1">CID</label>
+                    <textarea name="cid" value={formData.cid} onChange={handleInputChange} rows={3} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
                   </div>
                 )}
 
                 {formData.pcdStatus === 'sob_investigacao' && (
                   <div className="animate-fade-in pt-2">
-                    <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Descreva a Situação Atual do Aluno</label>
-                    <textarea 
-                      name="investigationDescription" 
-                      value={formData.investigationDescription} 
-                      onChange={handleInputChange} 
-                      rows={5} 
-                      className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"
-                    ></textarea>
+                    <label className="block text-xs font-bold text-blue-800 mb-1 ml-1">Situação Atual do Aluno</label>
+                    <textarea name="investigationDescription" value={formData.investigationDescription} onChange={handleInputChange} rows={5} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
                   </div>
                 )}
               </div>
 
               <div className="p-4 bg-white rounded-2xl border border-blue-100 shadow-sm space-y-3">
-                <h4 className="text-[10px] font-black text-blue-800">Necessidade em Ambiente Escolar</h4>
+                <h4 className="text-xs font-bold text-blue-800">Ambiente Escolar</h4>
                 <div className="space-y-2">
                   <label className="flex items-start space-x-3 cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors">
                     <input 
@@ -409,14 +349,8 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
               </div>
 
               <div className="animate-fade-in">
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 ml-1">Tipo de Avaliação Pedagógica</label>
-                <textarea 
-                  name="pedagogicalEvaluationType" 
-                  value={formData.pedagogicalEvaluationType} 
-                  onChange={handleInputChange} 
-                  rows={4} 
-                  className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"
-                ></textarea>
+                <label className="block text-xs font-bold text-blue-800 mb-1 ml-1">Tipo de Avaliação Pedagógica</label>
+                <textarea name="pedagogicalEvaluationType" value={formData.pedagogicalEvaluationType} onChange={handleInputChange} rows={4} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
               </div>
             </div>
           )}
@@ -425,6 +359,15 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
         <div>
           <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Observações importantes</label>
           <textarea name="observations" value={formData.observations} onChange={handleInputChange} placeholder="Informações médicas, comportamentais..." className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none text-sm font-medium"></textarea>
+        </div>
+
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <label className="flex items-start space-x-3 cursor-pointer">
+            <input type="checkbox" name="legalConsent" checked={formData.legalConsent} onChange={handleInputChange} className="mt-1 w-5 h-5 text-indigo-600 rounded" required />
+            <span className="text-xs font-medium text-slate-600 leading-tight">
+              Declaro estar ciente de que as informações fornecidas são de minha inteira responsabilidade e que a escola poderá solicitar documentos comprobatórios a qualquer momento.
+            </span>
+          </label>
         </div>
 
         <div className="flex space-x-3">
@@ -438,7 +381,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
             </button>
           )}
           <button type="submit" className="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider">
-            <i className="fas fa-save mr-3"></i> Salvar cadastro do aluno
+            <i className="fas fa-check-circle mr-3"></i> Finalizar Cadastro
           </button>
         </div>
       </form>

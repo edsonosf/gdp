@@ -19,6 +19,7 @@ interface UserEditFormProps {
   occurrences?: Occurrence[];
   showAdminToggle?: boolean;
   onDelete?: (userId: string) => void;
+  adminCount?: number;
 }
 
 const UserEditForm: React.FC<UserEditFormProps> = ({ 
@@ -27,17 +28,31 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
   onSuccess, 
   occurrences = [], 
   showAdminToggle = true,
-  onDelete
+  onDelete,
+  adminCount = 0
 }) => {
+  const maskPhone = (value: string) => {
+    return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{1})(\d{4})(\d)/, '$1 $2-$3').replace(/(-\d{4})\d+?$/, '$1').slice(0, 16);
+  };
+
+  const formatDateToDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('-')) {
+      const [year, month, day] = dateStr.split('T')[0].split('-');
+      return `${day}/${month}/${year}`;
+    }
+    return dateStr;
+  };
+
   const [formData, setFormData] = useState({
     fullName: user.name,
     socialName: user.socialName || '',
-    useSocialName: user.socialName ? 'sim' : 'nao',
+    useSocialName: !!user.socialName,
     gender: user.gender || '',
-    birthDate: user.birthDate || '',
+    birthDate: formatDateToDisplay(user.birthDate || ''),
     cpf: user.cpf,
-    phone: user.phone || '',
-    phone2: user.phone2 || '',
+    phone: maskPhone(user.phone || ''),
+    phone2: maskPhone(user.phone2 || ''),
     email: user.email || '',
     secretaria: user.secretaria || '',
     lotacao: user.lotacao || '',
@@ -86,15 +101,12 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
     }
   }, [formData.birthDate]);
 
-  // Permitir exclusão se a função onDelete for fornecida
-  const canDelete = !!onDelete;
+  // Permitir exclusão se a função onDelete for fornecida e não for "Meu Perfil"
+  const canDelete = !!onDelete && showAdminToggle;
+  const isDeleteDisabled = user.isSystemAdmin && adminCount <= 1;
 
   const maskDate = (value: string) => {
     return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1').slice(0, 10);
-  };
-
-  const maskPhone = (value: string) => {
-    return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{1})(\d{4})(\d)/, '$1 $2-$3').replace(/(-\d{4})\d+?$/, '$1').slice(0, 16);
   };
 
   const maskMatricula = (value: string) => {
@@ -140,7 +152,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
     const updatedUser: User = {
       ...user,
       name: formData.fullName,
-      socialName: formData.useSocialName === 'sim' ? formData.socialName : '',
+      socialName: formData.useSocialName ? formData.socialName : '',
       gender: formData.gender,
       birthDate: formData.birthDate,
       cpf: formData.cpf,
@@ -181,36 +193,30 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
             </button>
           </div>
           <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/*" />
-          <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-2 uppercase">Foto do perfil</p>
+          <p className="text-[10px] text-slate-400 font-bold tracking-widest mt-2 uppercase">Foto do Perfil</p>
         </section>
 
         {/* 2. Nome Logic */}
         <section className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <label className="block text-sm font-bold text-slate-700 mb-2">Utiliza nome social?</label>
-                <div className="flex space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" name="useSocialName" value="sim" checked={formData.useSocialName === 'sim'} onChange={handleInputChange} className="w-4 h-4 text-indigo-600" />
-                        <span className="text-sm font-medium text-slate-600">Sim</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" name="useSocialName" value="nao" checked={formData.useSocialName === 'nao'} onChange={handleInputChange} className="w-4 h-4 text-indigo-600" />
-                        <span className="text-sm font-medium text-slate-600">Não</span>
-                    </label>
-                </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-center">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" name="useSocialName" checked={formData.useSocialName} onChange={handleInputChange} className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
+                    <span className="text-sm font-bold text-slate-700">Utilizar Nome Social</span>
+                </label>
             </div>
 
             <div className="animate-fade-in">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  {formData.useSocialName === 'sim' ? 'Nome social' : 'Nome completo'}
+                  {formData.useSocialName ? 'Nome Social *' : 'Nome Completo *'}
                 </label>
                 <input 
                   type="text" 
-                  name={formData.useSocialName === 'sim' ? "socialName" : "fullName"} 
-                  value={formData.useSocialName === 'sim' ? formData.socialName : formData.fullName} 
+                  name={formData.useSocialName ? "socialName" : "fullName"} 
+                  value={formData.useSocialName ? formData.socialName : formData.fullName} 
                   onChange={handleInputChange} 
                   className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-indigo-500 outline-none font-medium" 
                   required 
+                  placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
                 />
             </div>
         </section>
@@ -245,7 +251,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
         </div>
 
         {/* 5. Celular de Contato e Celular para Recados */}
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
             <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Celular de contato *</label>
                 <div className="relative">
@@ -255,24 +261,24 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                       value={formData.phone} 
                       onChange={handleInputChange} 
                       placeholder="(99) 9 9999-9999" 
-                      className="w-full p-4 pr-12 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium" 
+                      className="w-full p-3 pr-10 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium" 
                       required 
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
-                        <i className="fab fa-whatsapp text-xl"></i>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
+                        <i className="fab fa-whatsapp text-lg"></i>
                     </div>
                 </div>
             </div>
             <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Celular para recados</label>
-                <input type="text" name="phone2" value={formData.phone2} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium" />
+                <input type="text" name="phone2" value={formData.phone2} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium" />
             </div>
         </div>
 
         {/* 6. E-mail */}
         <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail</label>
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail *</label>
+            <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" placeholder="exemplo@email.com" />
         </div>
 
         {/* 7. Secretaria Municipal de Origem */}
@@ -296,7 +302,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
         {/* 9. Cargo */}
         <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Cargo</label>
-            <input type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <input type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" placeholder="Ex: Professor" />
         </div>
 
         {/* 10. Função */}
@@ -320,7 +326,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
         {formData.funcao === 'Docente' && (
             <div className="space-y-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-fade-in">
                 <div>
-                    <label className="block text-xs font-bold text-indigo-900 mb-2 uppercase">Componente curricular (EF)</label>
+                    <label className="block text-xs font-bold text-indigo-900 mb-2">Componente curricular (EF)</label>
                     <div className="flex flex-wrap gap-2">
                         {COMPONENTE_OPTIONS.map(c => (
                             <button key={c} type="button" onClick={() => handleToggle(selectedComponents, setSelectedComponents, c)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedComponents.includes(c) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700'}`}>
@@ -330,7 +336,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                     </div>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-indigo-900 mb-2 uppercase">Disciplina</label>
+                    <label className="block text-xs font-bold text-indigo-900 mb-2">Disciplina</label>
                     <div className="flex flex-wrap gap-2">
                         {DISCIPLINA_OPTIONS.map(d => (
                             <button key={d} type="button" onClick={() => handleToggle(selectedDisciplines, setSelectedDisciplines, d)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedDisciplines.includes(d) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700'}`}>
@@ -433,14 +439,15 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
             type="submit" 
             className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all"
           >
-            Salvar alterações
+            {showAdminToggle ? 'Salvar alterações' : 'Atualizar'}
           </button>
           
           {canDelete && onDelete && (
             <button 
               type="button" 
               onClick={() => onDelete(user.id)}
-              className="px-6 bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center"
+              disabled={isDeleteDisabled}
+              className={`px-6 py-4 rounded-2xl font-bold shadow-lg transition-all flex items-center justify-center ${isDeleteDisabled ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-red-600 text-white shadow-red-200 hover:bg-red-700 active:scale-[0.98]'}`}
             >
               <i className="fas fa-trash-alt mr-2"></i>
               Excluir

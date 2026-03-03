@@ -16,18 +16,26 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
   const [loading, setLoading] = useState(false);
 
   const maskCPF = (value: string) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1')
-      .slice(0, 14);
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 11 && /^\d+$/.test(value.replace(/[.-]/g, ''))) {
+        return digits
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+          .slice(0, 14);
+    }
+    return value;
   };
 
   const handleUsuarioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setUsuario(maskCPF(value));
+    // Se for apenas números ou formato de CPF, aplica a máscara. 
+    // Caso contrário (e-mail), deixa digitar livremente.
+    if (/^[\d.-]*$/.test(value)) {
+        setUsuario(maskCPF(value));
+    } else {
+        setUsuario(value);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,13 +48,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
 
     setLoading(true);
     
-    // Simulação de busca no banco de dados local
+    // Busca no banco de dados local (carregado via API no App.tsx)
     setTimeout(() => {
-        const foundUser = users.find(u => u.cpf === usuario);
+        const foundUser = users.find(u => 
+            u.cpf === usuario || 
+            u.email === usuario || 
+            u.cpf?.replace(/\D/g, '') === usuario.replace(/\D/g, '')
+        );
         
         if (!foundUser) {
-            onRecordLog('user.login', 'failure', usuario, 'Tentativa com CPF não cadastrado');
+            onRecordLog('user.login', 'failure', usuario, 'Tentativa com Usuário não cadastrado');
             alert('Usuário não encontrado.');
+            setLoading(false);
+            return;
+        }
+
+        const unmaskedPhone = foundUser.phone?.replace(/\D/g, '');
+        const isValidPassword = foundUser.password === password || unmaskedPhone === password;
+
+        if (!isValidPassword) {
+            onRecordLog('user.login', 'failure', foundUser.cpf, 'Senha incorreta');
+            alert('Senha incorreta.');
             setLoading(false);
             return;
         }
@@ -64,18 +86,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
   };
 
   const handleGoogleLogin = () => {
-    setLoading(true);
-    setTimeout(() => {
-        // Para o login google, pegamos o primeiro usuário ativo como exemplo
-        const firstActiveUser = users.find(u => u.status === 'Ativo');
-        if (firstActiveUser) {
-          onLogin(firstActiveUser);
-        } else {
-          onRecordLog('user.login', 'failure', undefined, 'Tentativa de login Google sem conta ativa associada');
-          alert("Nenhum usuário ativo encontrado para simulação.");
-        }
-        setLoading(false);
-    }, 1500);
+    alert("O login via Google não está configurado para este ambiente. Utilize CPF e Senha.");
   };
 
   return (
@@ -90,14 +101,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Usuário</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Usuário (CPF ou E-mail)</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
               <i className="fas fa-id-card"></i>
             </span>
             <input
               type="text"
-              placeholder=""
+              placeholder="Digite seu CPF ou e-mail"
               className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
               value={usuario}
               onChange={handleUsuarioChange}
