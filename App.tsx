@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Student, Occurrence, ViewState, User, AccessLog, LegalResponsible } from './types';
+import { Student, Occurrence, ViewState, User, AccessLog, LegalResponsible, Option, PositionOption, OccurrenceClassification, LocalUnitOption } from './types';
 import { DEFAULT_STUDENT_IMAGE } from './constants';
 import Layout from './components/Layout';
 import LoginForm from './components/LoginForm';
@@ -22,6 +22,7 @@ import StudentDefense from './components/StudentDefense';
 import Formalization from './components/Formalization';
 import AccessLogsView from './components/AccessLogsView';
 import StudentList from './components/StudentList';
+import VisualIdentity from './components/VisualIdentity';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('LOGIN');
@@ -37,17 +38,37 @@ const App: React.FC = () => {
   const [unreadOccurrenceIds, setUnreadOccurrenceIds] = useState<string[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [curricularComponents, setCurricularComponents] = useState<Option[]>([]);
+  const [subjects, setSubjects] = useState<Option[]>([]);
+  const [workSchedules, setWorkSchedules] = useState<Option[]>([]);
+  const [workShifts, setWorkShifts] = useState<Option[]>([]);
+  const [kinship, setKinship] = useState<Option[]>([]);
+  const [genders, setGenders] = useState<Option[]>([]);
+  const [positions, setPositions] = useState<PositionOption[]>([]);
+  const [organizationalChart, setOrganizationalChart] = useState<Option[]>([]);
+  const [localUnits, setLocalUnits] = useState<LocalUnitOption[]>([]);
+  const [occurrenceClassifications, setOccurrenceClassifications] = useState<OccurrenceClassification[]>([]);
   const adminCount = useMemo(() => users.filter(u => u.isSystemAdmin).length, [users]);
 
   const fetchData = useCallback(async () => {
     setIsInitialLoading(true);
     setApiError(null);
     try {
-      const [studentsRes, occurrencesRes, usersRes, activeCountRes] = await Promise.all([
+      const [studentsRes, occurrencesRes, usersRes, activeCountRes, curricularRes, subjectsRes, workSchedulesRes, workShiftsRes, kinshipRes, gendersRes, positionsRes, orgChartRes, localUnitsRes, classificationsRes] = await Promise.all([
         fetch('/api/students'),
         fetch('/api/occurrences'),
         fetch('/api/users'),
-        fetch('/api/stats/active-students')
+        fetch('/api/stats/active-students'),
+        fetch('/api/options/curricular-components'),
+        fetch('/api/options/subjects'),
+        fetch('/api/options/work-schedules'),
+        fetch('/api/options/work-shifts'),
+        fetch('/api/options/kinship'),
+        fetch('/api/options/genders'),
+        fetch('/api/options/positions'),
+        fetch('/api/options/organizational-chart'),
+        fetch('/api/options/local-units'),
+        fetch('/api/options/occurrence-classifications')
       ]);
 
       if (!studentsRes.ok || !occurrencesRes.ok || !usersRes.ok) {
@@ -56,12 +77,21 @@ const App: React.FC = () => {
 
       setStudents(await studentsRes.json());
       setOccurrences(await occurrencesRes.json());
+      setUsers(await usersRes.json());
       
-      const usersList = await usersRes.json();
-      setUsers(usersList);
-
       const activeCountData = await activeCountRes.json();
       setActiveStudentsCount(activeCountData.total);
+
+      if (curricularRes.ok) setCurricularComponents(await curricularRes.json());
+      if (subjectsRes.ok) setSubjects(await subjectsRes.json());
+      if (workSchedulesRes.ok) setWorkSchedules(await workSchedulesRes.json());
+      if (workShiftsRes.ok) setWorkShifts(await workShiftsRes.json());
+      if (kinshipRes.ok) setKinship(await kinshipRes.json());
+      if (gendersRes.ok) setGenders(await gendersRes.json());
+      if (positionsRes.ok) setPositions(await positionsRes.json());
+      if (orgChartRes.ok) setOrganizationalChart(await orgChartRes.json());
+      if (localUnitsRes.ok) setLocalUnits(await localUnitsRes.json());
+      if (classificationsRes.ok) setOccurrenceClassifications(await classificationsRes.json());
     } catch (err) {
       console.error("Failed to fetch data from API:", err);
       setApiError((err as Error).message);
@@ -466,7 +496,7 @@ const App: React.FC = () => {
       case 'LOGIN':
         return <LoginForm users={users} onLogin={handleLogin} onGoToRegister={() => setView('USER_REGISTRATION')} onRecordLog={recordLog} />;
       case 'USER_REGISTRATION':
-        return <UserRegistrationForm onBack={() => setView('LOGIN')} onRegister={handleRegisterUser} />;
+        return <UserRegistrationForm onBack={() => setView('LOGIN')} onRegister={handleRegisterUser} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} />;
       case 'DASHBOARD':
         return <Dashboard 
           students={students} 
@@ -518,9 +548,11 @@ const App: React.FC = () => {
           />
         );
       case 'SYSTEM_MANAGEMENT':
-        return <SystemManagement onRecordLog={recordLog} currentUser={currentUser} onNavigate={setView} onRefreshData={fetchData} />;
+        return <SystemManagement onRecordLog={recordLog} currentUser={currentUser} onNavigate={setView} onRefreshData={fetchData} localUnits={localUnits} organizationalChart={organizationalChart} />;
       case 'ACCESS_LOGS':
         return <AccessLogsView onBack={() => setView('SYSTEM_MANAGEMENT')} currentUser={currentUser} />;
+      case 'VISUAL_IDENTITY':
+        return <VisualIdentity onRecordLog={recordLog} currentUser={currentUser} localUnits={localUnits} organizationalChart={organizationalChart} />;
       case 'STUDENT_LIST':
         return (
           <StudentList 
@@ -538,9 +570,9 @@ const App: React.FC = () => {
       case 'FORMALIZATION':
         return selectedStudent ? <Formalization student={selectedStudent} onBack={() => setView('PENDING_OCCURRENCES')} /> : null;
       case 'ADD_STUDENT':
-        return <StudentRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} />;
+        return <StudentRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} workShifts={workShifts} genders={genders} />;
       case 'ADD_RESPONSIBLE':
-        return <ResponsibleRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} />;
+        return <ResponsibleRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} kinship={kinship} workShifts={workShifts} />;
       case 'EDIT_STUDENT':
         return (
           <StudentRegistrationForm 
@@ -549,6 +581,8 @@ const App: React.FC = () => {
             onBack={() => setView('STUDENT_LIST')} 
             onRegister={(data) => handleUpdateStudent(data as Student)} 
             onDelete={handleDeleteStudent}
+            workShifts={workShifts}
+            genders={genders}
           />
         );
       case 'ADD_OCCURRENCE':
@@ -560,14 +594,16 @@ const App: React.FC = () => {
             initialStudentId={selectedStudent?.id}
             initialStudentIds={selectedStudentIds}
             onSave={handleAddOccurrence}
+            workShifts={workShifts}
+            classifications={occurrenceClassifications}
           />
         );
       case 'USER_MANAGEMENT':
         return <UserManagement users={users} onToggleStatus={handleToggleUserStatus} onToggleAdmin={handleToggleAdmin} onEdit={(u) => { setEditingUser(u); setView('EDIT_USER'); }} />;
       case 'EDIT_USER':
-        return editingUser ? <UserEditForm user={editingUser} occurrences={occurrences} onBack={() => setView('USER_MANAGEMENT')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={true} adminCount={adminCount} /> : null;
+        return editingUser ? <UserEditForm user={editingUser} occurrences={occurrences} onBack={() => setView('USER_MANAGEMENT')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={true} adminCount={adminCount} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} /> : null;
       case 'MY_PROFILE':
-        return currentUser ? <UserEditForm user={currentUser} occurrences={occurrences} onBack={() => setView('DASHBOARD')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={false} adminCount={adminCount} /> : null;
+        return currentUser ? <UserEditForm user={currentUser} occurrences={occurrences} onBack={() => setView('DASHBOARD')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={false} adminCount={adminCount} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} /> : null;
       case 'REPORTS':
         return <Reports occurrences={occurrences} students={students} onIndividualReportSearch={() => setView('INDIVIDUAL_REPORT_SEARCH')} />;
       case 'INDIVIDUAL_REPORT_SEARCH':
@@ -598,7 +634,8 @@ const App: React.FC = () => {
       case 'FORMALIZATION': return 'Formalização e Validação';
       case 'EDIT_USER': return 'Editar Perfil';
       case 'MY_PROFILE': return 'Meu Perfil';
-      default: return 'GDP';
+      case 'VISUAL_IDENTITY': return 'Identidade Visual';
+      default: return 'Identidade Visual';
     }
   };
 
@@ -612,7 +649,7 @@ const App: React.FC = () => {
       setView('STUDENT_LIST');
     } else if (view === 'STUDENT_DEFENSE' || view === 'FORMALIZATION') {
       setView('PENDING_OCCURRENCES');
-    } else if (['PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH'].includes(view)) {
+    } else if (['PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'VISUAL_IDENTITY'].includes(view)) {
       setSelectedStudent(null);
       setView('DASHBOARD');
     } else {
@@ -632,7 +669,7 @@ const App: React.FC = () => {
       setView={setView} 
       title={getTitle()} 
       isAdmin={currentUser?.isSystemAdmin} 
-      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE'].includes(view)} 
+      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE', 'VISUAL_IDENTITY'].includes(view)} 
       onBack={handleBack}
       onLogout={handleLogout}
     >

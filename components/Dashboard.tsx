@@ -151,6 +151,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     <span className="text-[11px] font-bold leading-tight text-purple-700">Sistema</span>
                 </div>
+
+                <div onClick={() => onNavigate && onNavigate('VISUAL_IDENTITY')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
+                    <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                        <i className="fas fa-palette text-sm"></i>
+                    </div>
+                    <span className="text-[11px] font-bold leading-tight text-indigo-700">Ident. Visual</span>
+                </div>
               </>
             )}
         </div>

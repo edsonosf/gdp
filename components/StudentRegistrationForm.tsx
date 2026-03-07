@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Student } from '../types';
-import { GRADE_OPTIONS, GENDER_OPTIONS } from '../constants';
+import { Student, Option } from '../types';
+import { GRADE_OPTIONS } from '../constants';
 
 interface StudentRegistrationFormProps {
   students: Student[];
@@ -8,9 +8,19 @@ interface StudentRegistrationFormProps {
   onBack: () => void;
   onRegister: (student: Omit<Student, 'id'> | Student) => void;
   onDelete?: (id: string, name: string) => void;
+  workShifts: Option[];
+  genders: Option[];
 }
 
-const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ students, initialData, onBack, onRegister, onDelete }) => {
+const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ 
+  students, 
+  initialData, 
+  onBack, 
+  onRegister, 
+  onDelete,
+  workShifts,
+  genders
+}) => {
   const maskPhone = (value: string) => {
     return value
       .replace(/\D/g, '')
@@ -189,7 +199,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
             <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Identidade de gênero</label>
             <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
               <option value=""></option>
-              {GENDER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              {genders.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
             </select>
           </div>
           <div>
@@ -245,10 +255,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({ stude
               <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Turno *</label>
               <select name="turn" value={formData.turn} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" required>
                 <option value=""></option>
-                <option value="Manhã">Manhã</option>
-                <option value="Tarde">Tarde</option>
-                <option value="Noite">Noite</option>
-                <option value="Integral">Integral</option>
+                {workShifts.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
               </select>
             </div>
           </div>

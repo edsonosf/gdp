@@ -121,4 +121,24 @@ export interface LegalResponsible {
   linkedStudents?: Student[];
 }
 
-export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'EDIT_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE' | 'ACCESS_LOGS' | 'ADD_RESPONSIBLE';
+export interface Option {
+  id: string;
+  value: string;
+}
+
+export interface LocalUnitOption extends Option {
+  organizationChartId?: string;
+}
+
+export interface PositionOption extends Option {
+  abbreviation: string;
+}
+
+export interface OccurrenceClassification {
+  id: string;
+  level: Severity;
+  description: string;
+  items: string[];
+}
+
+export type ViewState = 'LOGIN' | 'DASHBOARD' | 'STUDENT_LIST' | 'STUDENT_DETAIL' | 'ADD_OCCURRENCE' | 'USER_REGISTRATION' | 'USER_MANAGEMENT' | 'REPORTS' | 'EDIT_USER' | 'ADD_STUDENT' | 'EDIT_STUDENT' | 'PENDING_OCCURRENCES' | 'SYSTEM_MANAGEMENT' | 'OCCURRENCE_MONITORING' | 'NEW_OCCURRENCE_MESSAGE' | 'INDIVIDUAL_REPORT_SEARCH' | 'STUDENT_DEFENSE' | 'FORMALIZATION' | 'MY_PROFILE' | 'ACCESS_LOGS' | 'ADD_RESPONSIBLE' | 'VISUAL_IDENTITY';

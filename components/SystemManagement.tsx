@@ -1,27 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AccessLog, User } from '../types';
-import { LOTACAO_EDUCACAO_OPTIONS } from '../constants';
+import { AccessLog, User, Option, LocalUnitOption } from '../types';
 
 interface SystemManagementProps {
   onRecordLog?: (event: AccessLog['event'], status: AccessLog['status'], userId?: string, description?: string) => void;
   currentUser?: User | null;
   onNavigate?: (view: any) => void;
   onRefreshData?: () => void;
+  localUnits: LocalUnitOption[];
+  organizationalChart: Option[];
 }
-
-const UNIDADE_MUNICIPAL_OPTIONS = [
-  "Gabinete do Prefeito",
-  "Gabinete Vice-Prefeito",
-  "Controladoria Geral do Município",
-  "Secretaria de Comunicação",
-  "Secretaria de Cultura e Turismo",
-  "Secretaria de Educação",
-  "Secretaria de Saúde",
-  "Secretaria de Infraestrutura, Mobility and Controle Urbano",
-  "Secretaria de Desenvolvimento Econômico",
-  "Secretaria de Gestão, Orçamento e Finanças",
-  "Secretaria Especial de Integração de Políticas Sociais (SEPS)"
-];
 
 const UNIDADE_ATENDIMENTO_SAUDE = [
   "Centro de Controle de Zoonoses",
@@ -32,12 +19,8 @@ const UNIDADE_ATENDIMENTO_SAUDE = [
   "Farmácia Pólo"
 ];
 
-const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, currentUser, onNavigate, onRefreshData }) => {
+const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, currentUser, onNavigate, onRefreshData, localUnits, organizationalChart }) => {
   const [schoolYear, setSchoolYear] = useState('2026');
-  const [unidadeMunicipal, setUnidadeMunicipal] = useState('');
-  const [unidadeAtendimento, setUnidadeAtendimento] = useState('');
-  const [unidadeEducacional, setUnidadeEducacional] = useState('');
-  const [unidadeSelecionada, setUnidadeSelecionada] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dbStatus, setDbStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -46,18 +29,9 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
   const [selectedAdmin, setSelectedAdmin] = useState<{ id: string, name: string } | null>(null);
   const [resetPassword, setResetPassword] = useState('');
 
-  // Estados para Identidade Visual
-  const [leftLogo, setLeftLogo] = useState<string | null>(null);
-  const [rightLogo, setRightLogo] = useState<string | null>(null);
-  const [showHeaderText, setShowHeaderText] = useState(false);
-  const [showFooterDivider, setShowFooterDivider] = useState(false);
-  const [showFooterText, setShowFooterText] = useState(false);
-  
   const studentImportRef = useRef<HTMLInputElement>(null);
   const teacherImportRef = useRef<HTMLInputElement>(null);
   const restoreInputRef = useRef<HTMLInputElement>(null);
-  const leftLogoRef = useRef<HTMLInputElement>(null);
-  const rightLogoRef = useRef<HTMLInputElement>(null);
 
   const [syncUrl, setSyncUrl] = useState('https://sge.maracanau.ce.gov.br/auth/login');
   const [syncUser, setSyncUser] = useState('');
@@ -143,24 +117,6 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
   };
 
   const isSyncEnabled = syncUrl.trim() !== '' && syncUser.replace(/\D/g, '').length === 11 && syncPassword.trim() !== '';
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setter(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleApplyVisualIdentity = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      if (onRecordLog) onRecordLog('critical.action', 'success', undefined, 'Identidade visual da unidade aplicada');
-      alert("Identidade Visual aplicada com sucesso! Os relatórios agora utilizarão as novas definições de cabeçalho e rodapé.");
-    }, 1000);
-  };
 
   const handleBackup = async () => {
     setLoading(true);
@@ -472,193 +428,6 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
               </>
             )}
           </button>
-        </div>
-      </section>
-
-      {/* Configuração de Unidade de Trabalho */}
-      <section className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-        <h3 className="font-black text-sm font-bold text-slate-700 ml-1">Unidade de Trabalho</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Nome Unidade *</label>
-            <select 
-              value={unidadeMunicipal}
-              onChange={(e) => {
-                setUnidadeMunicipal(e.target.value);
-                setUnidadeAtendimento('');
-                setUnidadeEducacional('');
-              }}
-              className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Selecione a unidade municipal</option>
-              {UNIDADE_MUNICIPAL_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {unidadeMunicipal === "Secretaria de Saúde" && (
-            <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-600 mb-2 ml-1">Unidade de atendimento *</label>
-              <select 
-                value={unidadeAtendimento}
-                onChange={(e) => setUnidadeAtendimento(e.target.value)}
-                className="w-full p-3 border border-indigo-200 rounded-xl bg-indigo-50 text-sm font-bold text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Selecione a unidade de atendimento</option>
-                {UNIDADE_ATENDIMENTO_SAUDE.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {unidadeMunicipal === "Secretaria de Educação" && (
-            <div className="animate-fade-in">
-              <label className="block text-xs font-bold text-slate-600 mb-2 ml-1">Unidade de Trabalho *</label>
-              <select 
-                value={unidadeEducacional}
-                onChange={(e) => setUnidadeEducacional(e.target.value)}
-                className="w-full p-3 border border-indigo-200 rounded-xl bg-indigo-50 text-sm font-bold text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Selecione a Unidade</option>
-                {LOTACAO_EDUCACAO_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-all">
-            <div>
-              <span className="block text-sm font-bold text-slate-700">Selecionar</span>
-            </div>
-            <button 
-              onClick={() => {
-                if (!unidadeMunicipal) {
-                  alert("Por favor, selecione uma unidade municipal primeiro.");
-                  return;
-                }
-                setUnidadeSelecionada(!unidadeSelecionada);
-              }}
-              className={`w-12 h-6 rounded-full transition-all relative ${unidadeSelecionada ? 'bg-indigo-600' : 'bg-slate-300'}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${unidadeSelecionada ? 'right-1' : 'left-1'}`}></div>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Identidade Visual */}
-      <section className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-        <h3 className="text-sm font-bold text-slate-700 ml-1">Identidade visual</h3>
-        
-        {/* Cabeçalho de Documentos */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 pb-2 border-b border-slate-50">
-            <i className="fas fa-heading text-indigo-600 text-sm"></i>
-            <h4 className="text-sm font-bold text-slate-700">Cabeçalho de Documentos</h4>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block  text-sm font-bold text-slate-500 mb-2 ml-1">Anexar Logo</label>
-              <div 
-                onClick={() => leftLogoRef.current?.click()}
-                className="relative w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-200 transition-all overflow-hidden"
-              >
-                {leftLogo ? (
-                  <img src={leftLogo} alt="Logo esquerdo" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <>
-                    <i className="fas fa-image text-slate-300 text-2xl mb-1"></i>
-                    <span className="text-sm font-bold text-slate-500 text-center px-4">Anexar Imagem (LE)</span>
-                  </>
-                )}
-              </div>
-              <p className="text-sm font-bold text-slate-400 mt-1 ml-1 font-medium italic">Essa imagem será alinhada do lado esquerdo dos relatórios</p>
-              <input type="file" ref={leftLogoRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setLeftLogo)} />
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-all">
-              <div>
-                <span className="block text-xs font-bold text-slate-700">Exibir texto central do cabeçalho</span>
-                <span className="text-sm font-bold text-slate-400 font-medium">Exibir Imgens</span>
-              </div>
-              <button 
-                onClick={() => setShowHeaderText(!showHeaderText)}
-                className={`w-12 h-6 rounded-full transition-all relative ${showHeaderText ? 'bg-indigo-600' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showHeaderText ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-500 mb-2 ml-1">Logo da sub-unidade</label>
-              <div 
-                onClick={() => rightLogoRef.current?.click()}
-                className="relative w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-200 transition-all overflow-hidden"
-              >
-                {rightLogo ? (
-                  <img src={rightLogo} alt="Logo LD" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <>
-                    <i className="fas fa-image text-sm font-bold text-slate-500 text-2xl mb-1"></i>
-                    <span className="text-sm font-bold text-slate-500 text-center px-4">Anexar Imagem (LD)</span>
-                  </>
-                )}
-              </div>
-              <p className="text-sm font-bold text-slate-400 mt-1 ml-1 font-medium italic">Essa imagem será alinhada do lado direito dos relatórios</p>
-              <input type="file" ref={rightLogoRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, setRightLogo)} />
-            </div>
-          </div>
-        </div>
-
-        {/* Rodapé de Documentos */}
-        <div className="space-y-4 pt-2">
-          <div className="flex items-center space-x-2 pb-2 border-b border-slate-50">
-            <i className="fas fa-shoe-prints text-indigo-600 text-sm"></i>
-            <h4 className="text-sm font-bold text-slate-700">Rodapé</h4>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-all">
-              <div>
-                <span className="block text-sm font-bold text-slate-700">Inserir linha do rodapé</span>
-              </div>
-              <button 
-                onClick={() => setShowFooterDivider(!showFooterDivider)}
-                className={`w-12 h-6 rounded-full transition-all relative ${showFooterDivider ? 'bg-indigo-600' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showFooterDivider ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-all">
-              <div>
-                <span className="block text-xs font-bold text-slate-700">Exibir texto central do rodapé</span>
-                <span className="text-[11px] text-slate-400 font-medium">Informações de contato e endereço</span>
-              </div>
-              <button 
-                onClick={() => setShowFooterText(!showFooterText)}
-                className={`w-12 h-6 rounded-full transition-all relative ${showFooterText ? 'bg-indigo-600' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showFooterText ? 'right-1' : 'left-1'}`}></div>
-              </button>
-            </div>
-
-            <button 
-              onClick={handleApplyVisualIdentity}
-              className="w-full bg-indigo-600 text-white py-4 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-100 active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
-            >
-              <i className="fas fa-palette"></i>
-              <span>Aplicar</span>
-            </button>
-          </div>
         </div>
       </section>
 

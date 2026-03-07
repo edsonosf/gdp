@@ -1,22 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User } from '../types';
-import { 
-  GENDER_OPTIONS, 
-  SECRETARIA_OPTIONS, 
-  LOTACAO_EDUCACAO_OPTIONS, 
-  FUNCAO_OPTIONS,
-  COMPONENTE_OPTIONS,
-  DISCIPLINA_OPTIONS,
-  CARGA_OPTIONS,
-  TURNO_OPTIONS
-} from '../constants';
+import { User, Option, PositionOption, LocalUnitOption } from '../types';
 
 interface UserRegistrationFormProps {
   onBack: () => void;
   onRegister: (userData: Omit<User, 'id' | 'status'>) => void;
+  curricularComponents: Option[];
+  subjects: Option[];
+  workSchedules: Option[];
+  workShifts: Option[];
+  positions: PositionOption[];
+  genders: Option[];
+  organizationalChart: Option[];
+  localUnits: LocalUnitOption[];
 }
 
-const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onRegister }) => {
+const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ 
+  onBack, 
+  onRegister,
+  curricularComponents,
+  subjects,
+  workSchedules,
+  workShifts,
+  positions,
+  genders,
+  organizationalChart,
+  localUnits
+}) => {
   const [formData, setFormData] = useState({
     useGoogle: 'nao',
     useSocialName: false,
@@ -230,7 +239,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
               name={formData.useSocialName ? 'socialName' : 'fullName'} 
               value={formData.useSocialName ? formData.socialName : formData.fullName} 
               onChange={handleInputChange} 
-              className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-indigo-500 outline-none font-medium" 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${(formData.useSocialName ? formData.socialName : formData.fullName) ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
               required 
               placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
             />
@@ -239,16 +248,28 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Identidade de gênero</label>
-              <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
+              <select 
+                name="gender" 
+                value={formData.gender} 
+                onChange={handleInputChange} 
+                className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.gender ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+              >
                 <option value="">Selecione</option>
-                {GENDER_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                {genders.map(g => <option key={g.id} value={g.value}>{g.value}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
                 Data de nascimento
               </label>
-              <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+              <input 
+                type="text" 
+                name="birthDate" 
+                value={formData.birthDate} 
+                onChange={handleInputChange} 
+                placeholder="DD/MM/AAAA" 
+                className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.birthDate ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              />
             </div>
           </div>
         </section>
@@ -256,11 +277,27 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
         <section className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">CPF *</label>
-            <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="999.999.999-99" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" required />
+            <input 
+              type="text" 
+              name="cpf" 
+              value={formData.cpf} 
+              onChange={handleInputChange} 
+              placeholder="999.999.999-99" 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.cpf ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              required 
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Matrícula</label>
-            <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} placeholder="Sem dígito" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" required />
+            <input 
+              type="text" 
+              name="matricula" 
+              value={formData.matricula} 
+              onChange={handleInputChange} 
+              placeholder="Sem dígito" 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.matricula ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              required 
+            />
           </div>
         </section>
 
@@ -274,7 +311,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
                 value={formData.phone} 
                 onChange={handleInputChange} 
                 placeholder="(99) 9 9999-9999" 
-                className="w-full p-3 pr-10 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium focus:ring-2 focus:ring-indigo-500" 
+                className={`w-full p-3 pr-10 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                 required 
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
@@ -284,38 +321,87 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Celular para recados</label>
-            <input type="text" name="phone2" value={formData.phone2} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <input 
+              type="text" 
+              name="phone2" 
+              value={formData.phone2} 
+              onChange={handleInputChange} 
+              placeholder="(99) 9 9999-9999" 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone2 ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+            />
           </div>
         </section>
 
         <section className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail *</label>
-            <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <input 
+              type="email" 
+              name="email" 
+              value={formData.email} 
+              onChange={handleInputChange} 
+              placeholder="exemplo@email.com" 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.email ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Secretaria municipal de origem</label>
-            <select name="secretaria" value={formData.secretaria} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
+            <select 
+              name="secretaria" 
+              value={formData.secretaria} 
+              onChange={handleInputChange} 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.secretaria ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+            >
               <option value="">Selecione</option>
-              {SECRETARIA_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              {organizationalChart.map(s => <option key={s.id} value={s.value}>{s.value}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Lotação atual</label>
-            <select name="lotacao" value={formData.lotacao} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
+            <select 
+              name="lotacao" 
+              value={formData.lotacao} 
+              onChange={handleInputChange} 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.lotacao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+            >
                 <option value="">Selecione</option>
-                {LOTACAO_EDUCACAO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                {localUnits
+                  .filter(o => {
+                    if (formData.secretaria === 'Secretaria de Educação') {
+                      const eduOrg = organizationalChart.find(org => org.value === 'Secretaria de Educação');
+                      if (!eduOrg) return true;
+                      if (!o.organizationChartId) return true; // Fallback for unlinked units
+                      return o.organizationChartId === eduOrg.id;
+                    }
+                    return true;
+                  })
+                  .map(o => <option key={o.id} value={o.value}>{o.value}</option>)
+                }
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Cargo</label>
-            <input type="text" name="cargo" value={formData.cargo} onChange={handleInputChange} placeholder="Ex: Professor" className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium" />
+            <select 
+              name="cargo" 
+              value={formData.cargo} 
+              onChange={handleInputChange} 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.cargo ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+            >
+              <option value="">Selecione</option>
+              {positions.map(p => <option key={p.id} value={p.value}>{p.value} ({p.abbreviation})</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Função</label>
-            <select name="funcao" value={formData.funcao} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none font-medium">
+            <select 
+              name="funcao" 
+              value={formData.funcao} 
+              onChange={handleInputChange} 
+              className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.funcao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+            >
               <option value="">Selecione</option>
-              {FUNCAO_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+              {positions.map(p => <option key={p.id} value={p.value}>{p.value}</option>)}
+              <option value="Outra Função">Outra Função</option>
             </select>
           </div>
         </section>
@@ -324,7 +410,15 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
           {formData.funcao === 'Outra Função' && (
             <div className="animate-fade-in">
               <label className="block text-sm font-semibold text-slate-700 mb-1">Especifique sua função *</label>
-              <input type="text" name="otherFuncao" value={formData.otherFuncao} onChange={handleInputChange} className="w-full p-3 border border-indigo-200 rounded-xl bg-indigo-50 outline-none font-medium" placeholder="Qual função exerce?" required />
+              <input 
+                type="text" 
+                name="otherFuncao" 
+                value={formData.otherFuncao} 
+                onChange={handleInputChange} 
+                className={`w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.otherFuncao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                placeholder="Qual função exerce?" 
+                required 
+              />
             </div>
           )}
 
@@ -333,9 +427,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
               <div>
                 <label className="block text-xs font-bold text-indigo-900 mb-2 uppercase">Componente Curricular (EF)</label>
                 <div className="flex flex-wrap gap-2">
-                  {COMPONENTE_OPTIONS.map(c => (
-                    <button key={c} type="button" onClick={() => handleToggle(selectedComponents, setSelectedComponents, c)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedComponents.includes(c) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}>
-                      {c}
+                  {curricularComponents.map(c => (
+                    <button key={c.id} type="button" onClick={() => handleToggle(selectedComponents, setSelectedComponents, c.value)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedComponents.includes(c.value) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}>
+                      {c.value}
                     </button>
                   ))}
                 </div>
@@ -343,9 +437,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
               <div>
                 <label className="block text-xs font-bold text-indigo-900 mb-2 uppercase">Disciplina</label>
                 <div className="flex flex-wrap gap-2">
-                  {DISCIPLINA_OPTIONS.map(d => (
-                    <button key={d} type="button" onClick={() => handleToggle(selectedDisciplines, setSelectedDisciplines, d)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedDisciplines.includes(d) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}>
-                      {d}
+                  {subjects.map(d => (
+                    <button key={d.id} type="button" onClick={() => handleToggle(selectedDisciplines, setSelectedDisciplines, d.value)} className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all ${selectedDisciplines.includes(d.value) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`}>
+                      {d.value}
                     </button>
                   ))}
                 </div>
@@ -357,9 +451,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Carga horária</label>
               <div className="flex flex-wrap gap-2">
-                {CARGA_OPTIONS.map(o => (
-                  <button key={o} type="button" onClick={() => handleToggle(selectedCarga, setSelectedCarga, o)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${selectedCarga.includes(o) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                    {o}
+                {workSchedules.map(o => (
+                  <button key={o.id} type="button" onClick={() => handleToggle(selectedCarga, setSelectedCarga, o.value)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all ${selectedCarga.includes(o.value) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                    {o.value}
                   </button>
                 ))}
               </div>
@@ -388,7 +482,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
                       value={formData.customSchedule1} 
                       onChange={handleInputChange} 
                       placeholder="Horário" 
-                      className="w-full p-3 border border-slate-200 rounded-xl bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      className={`w-full p-3 border rounded-xl outline-none text-xs font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule1 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                     />
                     <input 
                       type="text" 
@@ -396,7 +490,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
                       value={formData.customSchedule2} 
                       onChange={handleInputChange} 
                       placeholder="Horário" 
-                      className="w-full p-3 border border-slate-200 rounded-xl bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      className={`w-full p-3 border rounded-xl outline-none text-xs font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule2 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                     />
                     <input 
                       type="text" 
@@ -404,7 +498,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
                       value={formData.customSchedule3} 
                       onChange={handleInputChange} 
                       placeholder="Horário" 
-                      className="w-full p-3 border border-slate-200 rounded-xl bg-white text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" 
+                      className={`w-full p-3 border rounded-xl outline-none text-xs font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule3 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                     />
                   </div>
                 )}
@@ -415,9 +509,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Turno de trabalho</label>
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {TURNO_OPTIONS.map(o => (
-                <button key={o} type="button" onClick={() => handleToggle(selectedTurno, setSelectedTurno, o)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${selectedTurno.includes(o) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                  {o}
+              {workShifts.map(o => (
+                <button key={o.id} type="button" onClick={() => handleToggle(selectedTurno, setSelectedTurno, o.value)} className={`px-3 py-2 rounded-lg text-xs font-bold border transition-all whitespace-nowrap ${selectedTurno.includes(o.value) ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                  {o.value}
                 </button>
               ))}
             </div>
@@ -426,7 +520,13 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ onBack, onR
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">Informações Adicionais Relevantes</label>
-          <textarea name="additionalInfo" value={formData.additionalInfo} onChange={handleInputChange} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 outline-none h-24 resize-none focus:ring-indigo-500 font-medium text-sm" placeholder="Digite aqui..."></textarea>
+          <textarea 
+            name="additionalInfo" 
+            value={formData.additionalInfo} 
+            onChange={handleInputChange} 
+            className={`w-full p-3 border rounded-xl outline-none h-24 resize-none transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white font-medium text-sm ${formData.additionalInfo ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+            placeholder="Digite aqui..."
+          ></textarea>
         </div>
 
         <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex items-start space-x-3">

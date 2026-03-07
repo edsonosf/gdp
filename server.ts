@@ -798,6 +798,55 @@ async function startServer() {
     }
   });
 
+  app.delete("/api/occurrences/:id", async (req, res) => {
+    const { id } = req.params;
+    try {
+      await query("DELETE FROM occurrences WHERE id = $1", [id]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // Visual Identity
+  app.get("/api/visual-identity", async (req, res) => {
+    try {
+      const result = await query("SELECT * FROM visual_identity ORDER BY vis_created_at DESC LIMIT 1");
+      if (result.rows.length > 0) {
+        const v = result.rows[0];
+        res.json({
+          id: v.id,
+          useVisualIdentity: v.vis_usevisual_identity,
+          unitId: v.vis_name_id,
+          leftLogo: v.vis_docheaderlft_image,
+          headerText: v.vis_docheadercnt,
+          rightLogo: v.vis_docheaderrgh_image,
+          useFooter: v.vis_footer,
+          showHeaderText: v.vis_show_header_text,
+          showFooterText: v.vis_show_footer_text,
+          showFooterDivider: v.vis_show_footer_divider
+        });
+      } else {
+        res.json(null);
+      }
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post("/api/visual-identity", async (req, res) => {
+    const v = req.body;
+    try {
+      await query(
+        "INSERT INTO visual_identity (vis_usevisual_identity, vis_name_id, vis_docheaderlft_image, vis_docheadercnt, vis_docheaderrgh_image, vis_footer, vis_show_header_text, vis_show_footer_text, vis_show_footer_divider) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        [v.useVisualIdentity, v.unitId, v.leftLogo, v.headerText, v.rightLogo, v.useFooter, v.showHeaderText, v.showFooterText, v.showFooterDivider]
+      );
+      res.status(201).json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
   app.put("/api/occurrences/:id", async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -864,6 +913,106 @@ async function startServer() {
     try {
       const result = await query("SELECT id, usr_name as name, usr_password as password FROM users WHERE usr_is_system_admin = TRUE AND usr_status = 'Ativo'");
       res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  // System Options Routes
+  app.get("/api/options/curricular-components", async (req, res) => {
+    try {
+      const result = await query("SELECT id, cur_component as value FROM curricular_component ORDER BY cur_component");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/subjects", async (req, res) => {
+    try {
+      const result = await query("SELECT id, sbj_subjects as value FROM subjects ORDER BY sbj_subjects");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/work-schedules", async (req, res) => {
+    try {
+      const result = await query("SELECT id, wrk_schedules as value FROM work_schedules ORDER BY wrk_schedules");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/work-shifts", async (req, res) => {
+    try {
+      const result = await query("SELECT id, wrk_shift as value FROM work_shift ORDER BY wrk_shift");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/kinship", async (req, res) => {
+    try {
+      const result = await query("SELECT id, kns_kinship as value FROM kinship ORDER BY kns_kinship");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/genders", async (req, res) => {
+    try {
+      const result = await query("SELECT id, gen_type as value FROM gender_types ORDER BY gen_type");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/positions", async (req, res) => {
+    try {
+      const result = await query("SELECT id, pos_type as value, pos_abbreviation as abbreviation FROM positions ORDER BY pos_type");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/organizational-chart", async (req, res) => {
+    try {
+      const result = await query("SELECT id, org_name as value FROM organizational_chart ORDER BY org_name");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/local-units", async (req, res) => {
+    try {
+      const result = await query("SELECT id, loc_name as value, loc_organization_chart_id as \"organizationChartId\" FROM local_unit ORDER BY loc_name");
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/options/occurrence-classifications", async (req, res) => {
+    try {
+      const severities = await query("SELECT id, level, description_level as description FROM severity_categories ORDER BY level");
+      const types = await query("SELECT id, category_id, occurrence_description as description FROM occurrence_types");
+      
+      const classifications = severities.rows.map(severity => ({
+        ...severity,
+        items: types.rows
+          .filter(t => t.category_id === severity.id)
+          .map(t => t.description)
+      }));
+      
+      res.json(classifications);
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
     }

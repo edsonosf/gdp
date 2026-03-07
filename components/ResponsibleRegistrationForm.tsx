@@ -1,14 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Student, LegalResponsible } from '../types';
-import { RELATIONSHIP_OPTIONS } from '../constants';
+import { Student, LegalResponsible, Option } from '../types';
 
 interface ResponsibleRegistrationFormProps {
   onBack: () => void;
   onRegister: (data: Omit<LegalResponsible, 'id'>) => void;
   students: Student[];
+  kinship: Option[];
+  workShifts: Option[];
 }
 
-const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = ({ onBack, onRegister, students }) => {
+const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = ({ 
+  onBack, 
+  onRegister, 
+  students,
+  kinship,
+  workShifts
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     relationship: '',
@@ -146,7 +153,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
               required
             >
               <option value="">Selecione o vínculo</option>
-              {RELATIONSHIP_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {kinship.map(opt => <option key={opt.id} value={opt.value}>{opt.value}</option>)}
             </select>
           </div>
 
@@ -252,7 +259,8 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                     <label className="block text-[9px] font-bold text-slate-400 mb-1">Turno</label>
                     <div className="relative">
                       <select className="w-full p-3 border border-indigo-100 rounded-2xl bg-indigo-50/30 shadow-sm outline-none appearance-none text-slate-400 text-[9px]">
-                        <option>Selecione</option>
+                        <option value="">Selecione</option>
+                        {workShifts.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
                       </select>
                       <i className="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none text-[8px]"></i>
                     </div>

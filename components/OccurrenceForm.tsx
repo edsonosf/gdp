@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Student, OccurrenceType, Occurrence, User, Severity } from '../types';
-import { GRADE_OPTIONS, TURNO_OPTIONS } from '../constants';
+import { Student, OccurrenceType, Occurrence, User, Severity, Option, OccurrenceClassification } from '../types';
+import { GRADE_OPTIONS } from '../constants';
 
 interface OccurrenceFormProps {
   students: Student[];
@@ -9,6 +9,8 @@ interface OccurrenceFormProps {
   initialStudentId?: string;
   initialStudentIds?: string[];
   onSave: (occurrence: Omit<Occurrence, 'id'>) => void;
+  workShifts: Option[];
+  classifications: OccurrenceClassification[];
 }
 
 interface ClassificationOption {
@@ -16,89 +18,21 @@ interface ClassificationOption {
   severity: Severity;
 }
 
-const PEDAGOGICAL_OPTIONS: { severity: Severity; description: string; items: string[] }[] = [
-  {
-    severity: Severity.LOW,
-    description: "Fatos que atrapalham o ritmo individual do aluno ou pequenos desvios de conduta.",
-    items: [
-      "Apresentar de forma recorrente esquecimento do material escolar.",
-      "Falta de material escolar (livros didáticos) durante as atividades.",
-      "Falta de zelo com o material escolar (livros, cadernos, etc).",
-      "Dormir durante a aula.",
-      "Se debruçar ou baixar a cabeça para ignorar a explicação do professor.",
-      "Uso inadequado do uniforme escolar.",
-      "Modificar o uniforme escolar com pinturas, riscos ou recortes inapropriados.",
-      "Utilização de pinturas corporais com material inapropriados (Liquido corretivo, esmalte ou outros produtos toxicos.",
-      "Violação do código escolar de vestimenta.",
-      "Uso de má fé ao solicitar ida ao banheiro.",
-      "Contribuir para desperdício de água.",
-      "Uso inadequado de recursos e materiais coletivos."
-    ]
-  },
-  {
-    severity: Severity.MEDIUM,
-    description: "Ações que prejudicam o andamento da aula, o coletivo ou demonstram indisciplina moderada.",
-    items: [
-      "Apresentar-se com fardamento sujo, desalinhado ou rasgado",
-      "Atrasos recorrentes à escola.",
-      "Utilização de calçados diferentes do previsto pelo regimento escolar.",
-      "Faltas injustificadas e não comunicadas.",
-      "Circular pelos corredores em horário de aula sem permissão.",
-      "Saída da sala de aula sem autorização.",
-      "Conversas excessivas/paralelas ou interrupções constantes.",
-      "Não realizar atividades em sala ou não apresentar o \"dever de casa\".",
-      "Recusar-se a participar de atividades (individuais ou em grupo).",
-      "Conduta educacional inadequada (pés nas cadeiras).",
-      "Uso indevido de eletrônicos (celular, smartwatch, etc) ou jogos durante a aula.",
-      "Não observar a higine corporal no ambiente escolar.",
-      "Desperdiçar merenda escolar ou incentivar o desperdício.",
-      "Importunar o colega com toques (empurrões, puxões de cabelo, pisões).",
-      "Impor ao colega ou a qualquer membro da unidade escolar pseudônimos depreciativos ou não.",
-      "Incitar práticas desordeiras.",
-      "Prevaricar (faltar ao cumprimento do dever por interesse ou má-fé)."
-    ]
-  },
-  {
-    severity: Severity.HIGH,
-    description: "Atitudes que rompem o respeito hierárquico, ameaçam a segurança física/emocional ou violam direitos de imagem e privacidade.",
-    items: [
-      "Agressão verbal, ameaça ou intimidação.",
-      "Intimidação através de gestos ou palavras (coação).",
-      "Agir de forma grosseira ou usar argumentações pejorativas/depreciativas contra membros da escola.",
-      "Desrespeito à autoridade com respostas ofensivas (professores, coordenação, etc).",
-      "Desrespeito ou falta de educação (verbal ou gestual) em geral.",
-      "Interpelar de forma truculenta membros da comunidade escolar.",
-      "Usar palavras de baixo calão (vocabulário vulgar/obsceno).",
-      "Uso de termos ofensivos ou linguagem imprópria recorrente.",
-      "Filmar ou fotografar membros da escola sem autorização.",
-      "Evadir-se (fugir) da escola antes do horário sem autorização.",
-      "Importunar colegas usando qualquer tipo de artefato perigoso."
-    ]
-  }
-];
-
-const DISCIPLINARY_OPTIONS: { severity: Severity; description: string; items: string[] }[] = [
-  {
-    severity: Severity.CRITICAL,
-    description: "Violações graves do regimento que exigem intervenção imediata.",
-    items: [
-      "Porte de armas ou objetos perigosos.",
-      "Uso ou comercialização de substâncias ilícitas.",
-      "Agressão física contra membros da comunidade escolar.",
-      "Vandalismo grave contra o patrimonio.",
-      "Furto ou roubo no ambiente escolar.",
-      "Assédio ou importunação sexual.",
-      "Bullying ou humilhação sistemática",
-      "Atos de discriminação (racismo, homofobia, sexismo, etc.)",
-      "Vandalismo/Depredação, danos a móveis, equipamentos ou pichação de paredes.",
-      "Agressividade física/verbal ou ameaça."
-    ]
-  }
-];
+interface SGEStudent {
+  id: string;
+  profile_image: string;
+  name: string;
+  social_name: string;
+  transgender: boolean;
+  classroom: string;
+  birth_date: string;
+  pcd_info: string;
+  month_severity: number;
+}
 
 const DEFAULT_STUDENT_IMAGE = 'https://via.placeholder.com/150';
 
-const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, currentUser, initialStudentId, initialStudentIds, onSave }) => {
+const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, currentUser, initialStudentId, initialStudentIds, onSave, workShifts, classifications }) => {
   const [studentId, setStudentId] = useState(initialStudentId || (initialStudentIds && initialStudentIds.length > 0 ? initialStudentIds[0] : ''));
   const [type, setType] = useState<OccurrenceType>(OccurrenceType.DISCIPLINARY);
   const [selectedTitles, setSelectedTitles] = useState<string[]>([]);
@@ -106,39 +40,60 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
   const [description, setDescription] = useState('');
   const [currentSeverity, setCurrentSeverity] = useState<Severity>(Severity.LOW);
 
-  const [searchName, setSearchName] = useState('');
-  const [searchGrade, setSearchGrade] = useState('');
-  const [searchTurn, setSearchTurn] = useState('');
-  const [searchRoom, setSearchRoom] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<SGEStudent[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(true);
 
-  const filteredStudents = students.filter(s => {
-    const matchesName = s.name.toLowerCase().includes(searchName.toLowerCase());
-    const matchesGrade = searchGrade === '' || s.grade === searchGrade;
-    const matchesTurn = searchTurn === '' || s.turn === searchTurn;
-    const matchesRoom = searchRoom === '' || (s.room && s.room.includes(searchRoom));
-    return matchesName && matchesGrade && matchesTurn && matchesRoom;
-  });
+  useEffect(() => {
+    const fetchStudents = async (search: string) => {
+      if (!search.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/students?mode=list&search=${encodeURIComponent(search)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Error searching students:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchStudents(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   const selectedStudent = students.find(s => s.id === studentId);
   const studentOccurrenceCount = occurrences.filter(occ => occ.studentId === studentId).length;
   const isRecidivist = studentOccurrenceCount > 0;
 
   useEffect(() => {
-    const options = type === OccurrenceType.PEDAGOGICAL ? PEDAGOGICAL_OPTIONS : DISCIPLINARY_OPTIONS;
+    const options = type === OccurrenceType.PEDAGOGICAL 
+      ? classifications.filter(c => c.level !== Severity.CRITICAL)
+      : classifications.filter(c => c.level === Severity.CRITICAL);
+    
     let maxSeverity = Severity.LOW;
 
     selectedTitles.forEach(title => {
       const option = options.find(group => group.items.includes(title));
       if (option) {
-        if (option.severity === Severity.CRITICAL) maxSeverity = Severity.CRITICAL;
-        else if (option.severity === Severity.HIGH && maxSeverity !== Severity.CRITICAL) maxSeverity = Severity.HIGH;
-        else if (option.severity === Severity.MEDIUM && maxSeverity !== Severity.CRITICAL && maxSeverity !== Severity.HIGH) maxSeverity = Severity.MEDIUM;
+        if (option.level === Severity.CRITICAL) maxSeverity = Severity.CRITICAL;
+        else if (option.level === Severity.HIGH && maxSeverity !== Severity.CRITICAL) maxSeverity = Severity.HIGH;
+        else if (option.level === Severity.MEDIUM && maxSeverity !== Severity.CRITICAL && maxSeverity !== Severity.HIGH) maxSeverity = Severity.MEDIUM;
       }
     });
     
     setCurrentSeverity(maxSeverity);
-  }, [selectedTitles, type]);
+  }, [selectedTitles, type, classifications]);
 
   const toggleTitle = (option: string) => {
     if (selectedTitles.includes(option)) {
@@ -176,7 +131,9 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
     }
   };
 
-  const currentClassificationGroups = type === OccurrenceType.PEDAGOGICAL ? PEDAGOGICAL_OPTIONS : DISCIPLINARY_OPTIONS;
+  const currentClassificationGroups = type === OccurrenceType.PEDAGOGICAL 
+    ? classifications.filter(c => c.level !== Severity.CRITICAL)
+    : classifications.filter(c => c.level === Severity.CRITICAL);
 
   return (
     <div className="p-4 pb-20 space-y-6 text-slate-700 font-sans">
@@ -222,115 +179,88 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
         ) : (
           <>
             {isSearchExpanded && (
-          <div className="p-5 space-y-4 animate-fade-in">
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Nome do aluno</label>
-                <input 
-                  type="text" 
-                  value={searchName} 
-                  onChange={(e) => setSearchName(e.target.value)}
-                  placeholder="Ex: Ana Maria..."
-                  className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Ano escolar</label>
-                  <select 
-                    value={searchGrade}
-                    onChange={(e) => setSearchGrade(e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  >
-                    <option value="">Todos</option>
-                    {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+              <div className="p-5 space-y-4 animate-fade-in">
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Buscar por nome ou turma..." 
+                    className="w-full pl-4 pr-10 py-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                  />
+                  <span className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400">
+                    {isSearching ? (
+                      <div className="w-4 h-4 border-2 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    ) : (
+                      <i className="fas fa-search"></i>
+                    )}
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Turno</label>
-                  <select 
-                    value={searchTurn}
-                    onChange={(e) => setSearchTurn(e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  >
-                    <option value="">Todos</option>
-                    {TURNO_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Sala</label>
-                <input 
-                  type="text" 
-                  value={searchRoom}
-                  onChange={(e) => setSearchRoom(e.target.value)}
-                  placeholder="Ex: 05, 12, Laboratório..."
-                  className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-50">
-               <h4 className="text-xs font-bold text-slate-400 mb-3 ml-1">Resultados ({filteredStudents.length})</h4>
-               <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                  {filteredStudents.length > 0 ? (
-                    filteredStudents.map(student => (
-                      <div 
-                        key={student.id}
-                        onClick={() => {
-                          setStudentId(student.id);
-                          setIsSearchExpanded(false);
-                        }}
-                        className={`p-3 rounded-2xl border flex items-center space-x-3 cursor-pointer transition-all ${
-                          studentId === student.id 
-                            ? 'bg-indigo-600 border-indigo-700 text-white' 
-                            : 'bg-white border-slate-100 hover:border-indigo-200 text-slate-700 shadow-sm'
-                        }`}
-                      >
-                        <img 
-                          src={student.profileImage} 
-                          alt={student.name} 
-                          className={`w-10 h-10 rounded-full object-cover border-2 ${studentId === student.id ? 'border-white/30' : 'border-slate-50'}`} 
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-bold truncate ${studentId === student.id ? 'text-white' : 'text-slate-800'}`}>{student.name}</p>
-                          <p className={`text-[10px] font-medium opacity-70 ${studentId === student.id ? 'text-indigo-100' : 'text-slate-500'}`}>
-                            {student.grade} • {student.classroom} • {student.turn}
-                          </p>
-                        </div>
-                        {studentId === student.id && <i className="fas fa-check-circle text-white"></i>}
+                <div className="pt-2">
+                  <h4 className="text-xs font-bold text-slate-400 mb-3 ml-1">Resultados ({searchResults.length})</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    {searchResults.length > 0 ? (
+                      searchResults.map(student => {
+                        const displayName = student.social_name || student.name;
+                        return (
+                          <div 
+                            key={student.id}
+                            onClick={() => {
+                              setStudentId(student.id);
+                              setIsSearchExpanded(false);
+                            }}
+                            className={`p-3 rounded-2xl border flex items-center space-x-3 cursor-pointer transition-all ${
+                              studentId === student.id 
+                                ? 'bg-indigo-600 border-indigo-700 text-white' 
+                                : 'bg-white border-slate-100 hover:border-indigo-200 text-slate-700 shadow-sm'
+                            }`}
+                          >
+                            <img 
+                              src={student.profile_image || DEFAULT_STUDENT_IMAGE} 
+                              alt={displayName} 
+                              className={`w-10 h-10 rounded-full object-cover border-2 ${studentId === student.id ? 'border-white/30' : 'border-slate-50'}`} 
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-bold truncate ${studentId === student.id ? 'text-white' : 'text-slate-800'}`}>{displayName}</p>
+                              <p className={`text-[10px] font-medium opacity-70 ${studentId === student.id ? 'text-indigo-100' : 'text-slate-500'}`}>
+                                {student.classroom}
+                              </p>
+                            </div>
+                            {studentId === student.id && <i className="fas fa-check-circle text-white"></i>}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-6 text-slate-400 italic text-xs">
+                        {searchTerm.length > 0 ? 'Nenhum aluno encontrado.' : 'Digite para pesquisar alunos...'}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-6 text-slate-400 italic text-xs">
-                      Nenhum aluno encontrado com estes filtros.
-                    </div>
-                  )}
-               </div>
-            </div>
-          </div>
-        )}
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {selectedStudent && !isSearchExpanded && (
-          <div className="p-5 flex items-center space-x-4 bg-indigo-50/50 animate-fade-in">
-            <img 
-              src={selectedStudent.profileImage || DEFAULT_STUDENT_IMAGE} 
-              alt={selectedStudent.name} 
-              className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
-            />
-            <div className="flex-1">
-              <h3 className="text-sm font-bold text-slate-800">{selectedStudent.name}</h3>
-              <p className="text-xs text-slate-500 font-medium">{selectedStudent.grade} - {selectedStudent.classroom}</p>
-            </div>
-            <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm">
-              <i className="fas fa-check"></i>
-            </div>
-          </div>
+            {selectedStudent && !isSearchExpanded && (
+              <div className="p-5 flex items-center space-x-4 bg-indigo-50/50 animate-fade-in">
+                <img 
+                  src={selectedStudent.profileImage || DEFAULT_STUDENT_IMAGE} 
+                  alt={selectedStudent.name} 
+                  className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-slate-800">{selectedStudent.name}</h3>
+                  <p className="text-xs text-slate-500 font-medium">{selectedStudent.grade} - {selectedStudent.classroom}</p>
+                </div>
+                <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm">
+                  <i className="fas fa-check"></i>
+                </div>
+              </div>
+            )}
+          </>
         )}
-      </>
-    )}
   </div>
 
       {selectedStudent && isRecidivist && (
@@ -401,18 +331,18 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
           
           <div className="space-y-6 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
             {currentClassificationGroups.map((group) => (
-              <div key={group.severity} className="space-y-3">
+              <div key={group.id} className="space-y-3">
                 <div className={`p-3 rounded-2xl border-l-4 ${
-                  group.severity === Severity.LOW ? 'bg-green-50 border-green-500' :
-                  group.severity === Severity.MEDIUM ? 'bg-amber-50 border-amber-500' :
-                  group.severity === Severity.HIGH ? 'bg-red-50 border-red-500' :
+                  group.level === Severity.LOW ? 'bg-green-50 border-green-500' :
+                  group.level === Severity.MEDIUM ? 'bg-amber-50 border-amber-500' :
+                  group.level === Severity.HIGH ? 'bg-red-50 border-red-500' :
                   'bg-red-100 border-red-900'
                 }`}>
                   <h4 className={`text-xs font-bold ${
-                    group.severity === Severity.LOW ? 'text-green-700' :
-                    group.severity === Severity.MEDIUM ? 'text-amber-700' :
+                    group.level === Severity.LOW ? 'text-green-700' :
+                    group.level === Severity.MEDIUM ? 'text-amber-700' :
                     'text-red-700'
-                  }`}>Gravidade: {group.severity}</h4>
+                  }`}>Gravidade: {group.level}</h4>
                   <p className="text-[10px] text-slate-600 leading-tight mt-1 font-medium italic">{group.description}</p>
                 </div>
 
