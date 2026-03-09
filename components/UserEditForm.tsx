@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Occurrence, Option, PositionOption, LocalUnitOption } from '../types';
+import { calculateAge } from '../utils';
 
 interface UserEditFormProps {
   user: User;
@@ -82,26 +83,10 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
   const [photoPreview, setPhotoPreview] = useState<string | null>(user.profileImage || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const calculateAge = (dob: string) => {
-    const parts = dob.split('/');
-    if (parts.length !== 3 || parts[2].length !== 4) return null;
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-    const birthDate = new Date(year, month, day);
-    if (isNaN(birthDate.getTime())) return null;
-    const today = new Date();
-    let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      calculatedAge--;
-    }
-    return calculatedAge >= 0 ? calculatedAge : null;
-  };
-
   useEffect(() => {
     if (formData.birthDate.length === 10) {
-      setAge(calculateAge(formData.birthDate));
+      const calculatedAge = calculateAge(formData.birthDate);
+      setAge(typeof calculatedAge === 'number' ? calculatedAge : null);
     } else {
       setAge(null);
     }
@@ -220,7 +205,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   name={formData.useSocialName ? "socialName" : "fullName"} 
                   value={formData.useSocialName ? formData.socialName : formData.fullName} 
                   onChange={handleInputChange} 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${(formData.useSocialName ? formData.socialName : formData.fullName) ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${(formData.useSocialName ? formData.socialName : formData.fullName).trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                   required 
                   placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
                 />
@@ -235,7 +220,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   name="gender" 
                   value={formData.gender} 
                   onChange={handleInputChange} 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.gender ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.gender.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
                 >
                     <option value="">Selecione</option>
                     {genders.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
@@ -251,7 +236,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   value={formData.birthDate} 
                   onChange={handleInputChange} 
                   placeholder="DD/MM/AAAA" 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.birthDate ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.birthDate.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                 />
             </div>
         </div>
@@ -260,7 +245,13 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
         <div className="grid grid-cols-2 gap-4">
             <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">CPF *</label>
-                <input type="text" name="cpf" value={formData.cpf} className="text-xs w-full p-3 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 outline-none font-medium" disabled />
+                <input 
+                  type="text" 
+                  name="cpf" 
+                  value={formData.cpf} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all ${formData.cpf.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-100 border-slate-200 text-slate-500'}`} 
+                  disabled 
+                />
             </div>
             <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Matrícula *</label>
@@ -269,7 +260,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   name="matricula" 
                   value={formData.matricula} 
                   onChange={handleInputChange} 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.matricula ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.matricula.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                   placeholder="Sem dígito" 
                   required 
                 />
@@ -287,7 +278,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                       value={formData.phone} 
                       onChange={handleInputChange} 
                       placeholder="(99) 9 9999-9999" 
-                      className={`text-xs w-full p-3 pr-10 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                      className={`text-xs w-full p-3 pr-10 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                       required 
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
@@ -303,7 +294,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   value={formData.phone2} 
                   onChange={handleInputChange} 
                   placeholder="(99) 9 9999-9999" 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone2 ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.phone2.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                 />
             </div>
         </div>
@@ -316,7 +307,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="email" 
               value={formData.email} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.email ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.email.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
               placeholder="exemplo@email.com" 
             />
         </div>
@@ -328,7 +319,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="secretaria" 
               value={formData.secretaria} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.secretaria ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.secretaria.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
             >
                 <option value="">Selecione</option>
                 {organizationalChart.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
@@ -342,7 +333,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="lotacao" 
               value={formData.lotacao} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.lotacao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.lotacao.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
             >
                 <option value="">Selecione</option>
                 {localUnits
@@ -367,7 +358,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="cargo" 
               value={formData.cargo} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.cargo ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.cargo.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
             >
                 <option value="">Selecione</option>
                 {positions.map(p => <option key={p.id} value={p.value}>{p.value} ({p.abbreviation})</option>)}
@@ -381,7 +372,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="funcao" 
               value={formData.funcao} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.funcao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.funcao.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
             >
                 <option value="">Selecione</option>
                 {positions.map(p => <option key={p.id} value={p.value}>{p.value}</option>)}
@@ -398,7 +389,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                   name="otherFuncao" 
                   value={formData.otherFuncao} 
                   onChange={handleInputChange} 
-                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.otherFuncao ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                  className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.otherFuncao.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
                 />
             </div>
         )}
@@ -466,7 +457,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                                 value={formData.customSchedule1} 
                                 onChange={handleInputChange} 
                                 placeholder="Horário" 
-                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule1 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
+                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule1.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                             />
                             <input 
                                 type="text" 
@@ -474,7 +465,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                                 value={formData.customSchedule2} 
                                 onChange={handleInputChange} 
                                 placeholder="Horário" 
-                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule2 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
+                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule2.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                             />
                             <input 
                                 type="text" 
@@ -482,7 +473,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                                 value={formData.customSchedule3} 
                                 onChange={handleInputChange} 
                                 placeholder="Horário" 
-                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule3 ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
+                                className={`text-xs w-full p-3 border rounded-xl outline-none font-bold transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.customSchedule3.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`} 
                             />
                         </div>
                     )}
@@ -509,7 +500,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="additionalInfo" 
               value={formData.additionalInfo} 
               onChange={handleInputChange} 
-              className={`w-full p-3 border rounded-xl outline-none h-24 resize-none transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white font-medium text-sm ${formData.additionalInfo ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              className={`w-full p-3 border rounded-xl outline-none h-24 resize-none transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white font-medium text-sm ${formData.additionalInfo.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
               placeholder="Digite aqui..."
             ></textarea>
         </div>

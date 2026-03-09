@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Student, Occurrence, Severity } from '../types';
 import { analyzeStudentBehavior } from '../services/geminiService';
 import { DEFAULT_STUDENT_IMAGE } from '../constants';
+import { calculateAge } from '../utils';
 
 interface StudentDetailProps {
   student: Student;
@@ -61,6 +62,7 @@ const StudentDetail: React.FC<StudentDetailProps> = ({ student, occurrences }) =
 
   const hasDefenseData = defesaAluno.trim().length > 0 || defenseFiles.length > 0;
   const isFormalized = notificadoResponsavel && cienteAluno;
+  const studentAge = calculateAge(student.birthDate);
 
   return (
     <div className="p-4 space-y-6 pb-32 text-slate-700">
@@ -79,7 +81,7 @@ const StudentDetail: React.FC<StudentDetailProps> = ({ student, occurrences }) =
         <h2 className="text-xl font-bold text-slate-800">{student.name}</h2>
         {student.socialName && <p className="text-sm font-medium text-indigo-600 mb-1">Nome Social: {student.socialName}</p>}
         <p className="text-slate-500 font-medium text-xs">
-          {student.grade} {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
+          {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
         </p>
         
         <div className="grid grid-cols-2 gap-3 mt-6 w-full">
@@ -89,7 +91,7 @@ const StudentDetail: React.FC<StudentDetailProps> = ({ student, occurrences }) =
             </div>
             <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                 <span className="block text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Idade</span>
-                <span className="text-lg font-black text-slate-700">{student.age || 'N/A'} anos</span>
+                <span className="text-lg font-black text-slate-700">{studentAge} anos</span>
             </div>
         </div>
       </div>

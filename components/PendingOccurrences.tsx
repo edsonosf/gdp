@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Student, Occurrence, ViewState } from '../types';
 import { DEFAULT_STUDENT_IMAGE } from '../constants';
+import { calculateAge } from '../utils';
 
 interface PendingOccurrencesProps {
   students: Student[];
@@ -190,9 +191,9 @@ const PendingOccurrences: React.FC<PendingOccurrencesProps> = ({
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 font-bold">
-                  {student.grade} {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
+                  {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
                 </p>
-                <p className="text-[10px] text-slate-400 font-medium">Idade: {student.age || '--'} Anos</p>
+                <p className="text-[10px] text-slate-400 font-medium">Idade: {calculateAge(student.birthDate)} Anos</p>
                 <div className="mt-1 space-y-0.5">
                   <p className="text-[10px] text-slate-500 font-medium"><span className="font-bold">Responsável:</span> {student.responsibleName}</p>
                   <p className="text-[10px] text-slate-500 font-medium"><span className="font-bold">Celular:</span> {student.contactPhone}</p>
@@ -242,7 +243,7 @@ const PendingOccurrences: React.FC<PendingOccurrencesProps> = ({
               <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-base truncate">{analyzingStudent.name}</h4>
                 <p className="text-[10px] text-indigo-100 font-bold opacity-90">
-                  {analyzingStudent.grade} {analyzingStudent.classroom} - Sala {analyzingStudent.room || 'N/A'} - {analyzingStudent.turn}
+                  {analyzingStudent.classroom} - Sala {analyzingStudent.room || 'N/A'} - {analyzingStudent.turn}
                 </p>
               </div>
               {/* Botão de remover da análise reduzido de w-10 h-10 para w-8 h-8 */}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Student, Option } from '../types';
 import { GRADE_OPTIONS } from '../constants';
+import { calculateAge } from '../utils';
 
 interface StudentRegistrationFormProps {
   students: Student[];

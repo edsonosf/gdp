@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Student } from '../types';
 import { DEFAULT_STUDENT_IMAGE } from '../constants';
+import { calculateAge } from '../utils';
 
 interface IndividualReportSearchProps {
   students: Student[];
@@ -72,11 +73,11 @@ const IndividualReportSearch: React.FC<IndividualReportSearchProps> = ({ student
               <div className="flex-1">
                 <h4 className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors">{student.name}</h4>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter mt-0.5">
-                  {student.grade} • {student.classroom}
+                  {student.classroom}
                 </p>
                 <div className="flex items-center mt-2 text-[9px] text-slate-400 font-bold uppercase">
                   <i className="fas fa-calendar-day mr-1 opacity-60"></i>
-                  <span>Idade: {student.age || '--'} Anos</span>
+                  <span>Idade: {calculateAge(student.birthDate)} Anos</span>
                 </div>
               </div>
               <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">

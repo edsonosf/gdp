@@ -284,7 +284,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                       <img src={s.profileImage || `https://i.pravatar.cc/150?u=${s.id}`} alt="" className="w-8 h-8 rounded-full object-cover mr-3" />
                       <div className="flex-1 text-left">
                         <p className="text-xs font-bold uppercase">{s.name}</p>
-                        <p className="text-[10px] opacity-70">{s.grade} - {s.classroom}</p>
+                        <p className="text-[10px] opacity-70">{s.classroom}</p>
                       </div>
                       <i className={`fas ${linkedStudentIds.includes(s.id) ? 'fa-check-circle' : 'fa-plus-circle opacity-30'}`}></i>
                     </button>
@@ -305,7 +305,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                   </div>
                   <div className="flex-1">
                     <h5 className="text-base font-bold text-indigo-800 uppercase leading-tight">{s.name}</h5>
-                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-tight">{s.grade}{s.classroom}{new Date().getFullYear()}</p>
+                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-tight">{s.classroom}</p>
                     <p className="text-xs text-slate-400 font-medium">{s.age || '13'} Anos</p>
                   </div>
                   <button type="button" onClick={() => toggleStudentLink(s.id)} className="w-10 h-10 flex items-center justify-center text-slate-700 hover:text-red-500 transition-colors">

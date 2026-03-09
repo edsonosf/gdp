@@ -8,6 +8,7 @@ interface DashboardProps {
   occurrences: Occurrence[];
   onSelectStudent: (student: Student) => void;
   onAddStudent: () => void;
+  onAddResponsible?: () => void;
   onAddOccurrence: () => void;
   onAnalyzeOccurrences: () => void;
   onSystemManagement?: () => void;
@@ -25,6 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   occurrences, 
   onSelectStudent, 
   onAddStudent,
+  onAddResponsible,
   onAddOccurrence,
   onAnalyzeOccurrences,
   onSystemManagement,
@@ -97,32 +99,32 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <section>
         <h2 className="text-sm font-semibold text-slate-800 mb-3 px-1">Ações rápidas</h2>
-        <div className="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide">
-            <div onClick={() => onNavigate && onNavigate('STUDENT_LIST')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-blue-50 transition-colors">
+        <div className="grid grid-cols-3 gap-3 px-1">
+            <div onClick={() => onNavigate && onNavigate('STUDENT_LIST')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-blue-50 transition-colors shadow-sm">
                 <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-users text-sm"></i>
                 </div>
                 <span className="text-[11px] font-bold leading-tight text-blue-800">Alunos</span>
             </div>
-            <div onClick={() => onNavigate && onNavigate('MY_PROFILE')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 transition-colors">
+            <div onClick={() => onNavigate && onNavigate('MY_PROFILE')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 transition-colors shadow-sm">
                 <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-user-circle text-sm"></i>
                 </div>
                 <span className="text-[11px] font-bold leading-tight text-indigo-800">Perfil</span>
             </div>
-            <div onClick={onAddOccurrence} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-orange-50 transition-colors">
+            <div onClick={onAddOccurrence} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-orange-50 transition-colors shadow-sm">
                 <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-clipboard-list text-sm"></i>
                 </div>
                 <span className="text-[11px] font-bold leading-tight text-orange-800">Ocorrência</span>
             </div>
-            <div onClick={onOpenMessages} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-slate-50 relative">
+            <div onClick={onOpenMessages} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-slate-50 relative shadow-sm">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${hasNewMessage ? 'bg-indigo-600 text-white animate-blink' : 'bg-purple-100 text-purple-600'}`}>
                     <i className="fas fa-comments text-sm"></i>
                 </div>
                 <span className="text-[11px] font-medium leading-tight">Mensagens</span>
             </div>
-            <div onClick={() => onViewMonitoring && onViewMonitoring()} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-emerald-50 transition-colors">
+            <div onClick={() => onViewMonitoring && onViewMonitoring()} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-emerald-50 transition-colors shadow-sm">
                 <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
                     <i className="fas fa-file-invoice text-sm"></i>
                 </div>
@@ -131,28 +133,56 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {isAdmin && (
               <>
-                <div onClick={onAddStudent} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-blue-50 transition-colors">
+                <div onClick={onAddStudent} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-blue-50 transition-colors shadow-sm">
                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
                         <i className="fas fa-user-plus text-sm"></i>
                     </div>
-                    <span className="text-[11px] font-bold leading-tight text-blue-800">Aluno</span>
+                    <span className="text-[11px] font-bold leading-tight text-blue-800">Novo Aluno</span>
                 </div>
 
-                <div onClick={onAnalyzeOccurrences} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
+                <div onClick={() => onAddResponsible && onAddResponsible()} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 transition-colors shadow-sm">
+                    <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-2">
+                        <i className="fas fa-user-shield text-sm"></i>
+                    </div>
+                    <span className="text-[11px] font-bold leading-tight text-indigo-800">Novo Resp.</span>
+                </div>
+
+                <div onClick={onAnalyzeOccurrences} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors shadow-sm">
                     <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
                         <i className="fas fa-magnifying-glass-chart text-sm"></i>
                     </div>
                     <span className="text-[11px] font-bold leading-tight text-indigo-700">Análise</span>
                 </div>
 
-                <div onClick={() => onNavigate && onNavigate('SYSTEM_MANAGEMENT')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
+                <div onClick={() => onNavigate && onNavigate('USER_MANAGEMENT')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-emerald-50 border-emerald-100 transition-colors shadow-sm">
+                    <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                        <i className="fas fa-users-gear text-sm"></i>
+                    </div>
+                    <span className="text-[11px] font-bold leading-tight text-emerald-700">Usuários</span>
+                </div>
+
+                <div onClick={() => onNavigate && onNavigate('REPORTS')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-blue-50 border-blue-100 transition-colors shadow-sm">
+                    <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                        <i className="fas fa-chart-pie text-sm"></i>
+                    </div>
+                    <span className="text-[11px] font-bold leading-tight text-blue-700">Relatórios</span>
+                </div>
+
+                <div onClick={() => onNavigate && onNavigate('ACCESS_LOGS')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-slate-50 border-slate-200 transition-colors shadow-sm">
+                    <div className="w-10 h-10 bg-slate-700 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
+                        <i className="fas fa-list-check text-sm"></i>
+                    </div>
+                    <span className="text-[11px] font-bold leading-tight text-slate-700">Logs</span>
+                </div>
+
+                <div onClick={() => onNavigate && onNavigate('SYSTEM_MANAGEMENT')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors shadow-sm">
                     <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
                         <i className="fas fa-gears text-sm"></i>
                     </div>
                     <span className="text-[11px] font-bold leading-tight text-purple-700">Sistema</span>
                 </div>
 
-                <div onClick={() => onNavigate && onNavigate('VISUAL_IDENTITY')} className="flex-shrink-0 w-24 bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors">
+                <div onClick={() => onNavigate && onNavigate('VISUAL_IDENTITY')} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center text-center cursor-pointer hover:bg-indigo-50 border-indigo-100 transition-colors shadow-sm">
                     <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center mb-2 shadow-sm">
                         <i className="fas fa-palette text-sm"></i>
                     </div>

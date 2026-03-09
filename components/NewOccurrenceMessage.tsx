@@ -53,7 +53,7 @@ const NewOccurrenceMessage: React.FC<NewOccurrenceMessageProps> = ({ occurrence,
           <div>
             <h2 className="text-xl font-black text-slate-800 leading-tight">{student.name}</h2>
             <p className="text-[11px] font-bold text-slate-400 mt-1">
-              {student.grade} {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
+              {student.classroom} - Sala {student.room || 'N/A'} - {student.turn}
             </p>
             
             <div className="mt-4 flex flex-col items-center space-y-1">

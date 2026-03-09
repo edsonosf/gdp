@@ -83,7 +83,7 @@ const OccurrenceMonitoring: React.FC<OccurrenceMonitoringProps> = ({
                     </div>
                     
                     <p className="text-[10px] text-slate-500 font-bold mb-2">
-                      {student?.grade} • {student?.classroom}
+                      {student?.classroom}
                     </p>
 
                     <div className="flex flex-wrap gap-1">

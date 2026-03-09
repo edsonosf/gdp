@@ -252,7 +252,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({ students, occurrences, 
                 />
                 <div className="flex-1">
                   <h3 className="text-sm font-bold text-slate-800">{selectedStudent.name}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{selectedStudent.grade} - {selectedStudent.classroom}</p>
+                  <p className="text-xs text-slate-500 font-medium">{selectedStudent.classroom}</p>
                 </div>
                 <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm">
                   <i className="fas fa-check"></i>

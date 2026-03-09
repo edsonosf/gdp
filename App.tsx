@@ -485,7 +485,7 @@ const App: React.FC = () => {
       );
     }
 
-    const isAdminView = ['REPORTS', 'USER_MANAGEMENT', 'EDIT_USER', 'ADD_STUDENT', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION'].includes(view);
+    const isAdminView = ['REPORTS', 'USER_MANAGEMENT', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION'].includes(view);
     // Note: Restricted access only to users with administrative privileges
     if (isAdminView && !currentUser?.isSystemAdmin) {
       setView('DASHBOARD');
@@ -509,6 +509,7 @@ const App: React.FC = () => {
           }}
           onSelectStudent={(s) => { setSelectedStudent(s); setView('STUDENT_DETAIL'); }} 
           onAddStudent={() => currentUser?.isSystemAdmin ? setView('ADD_STUDENT') : alert("Acesso negado.")}
+          onAddResponsible={() => currentUser?.isSystemAdmin ? setView('ADD_RESPONSIBLE') : alert("Acesso negado.")}
           onAddOccurrence={() => setView('ADD_OCCURRENCE')}
           onAnalyzeOccurrences={() => currentUser?.isSystemAdmin ? setView('PENDING_OCCURRENCES') : alert("Acesso negado.")}
           onSystemManagement={() => setView('SYSTEM_MANAGEMENT')}

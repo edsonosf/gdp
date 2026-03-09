@@ -20,7 +20,7 @@ const Formalization: React.FC<FormalizationProps> = ({ student, onBack }) => {
         <div>
           <h4 className="font-bold text-slate-800 text-sm">{student.name}</h4>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
-            {student.grade} {student.classroom} - Sala {student.room}
+            {student.classroom} - Sala {student.room}
           </p>
         </div>
       </div>
