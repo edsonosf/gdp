@@ -83,40 +83,6 @@ export async function initDb() {
     `COMMENT ON TABLE legal_responsible IS 'Tabela de Registro do Resposável Legal do Estudante.'`,    
     /*
     
-    Students table [Tabela de Registro de Estudantes]
-
-    */
-    `CREATE TABLE IF NOT EXISTS students (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      std_name TEXT NOT NULL,
-      std_social_name TEXT,
-      std_grade TEXT,
-      std_classroom TEXT,
-      std_room TEXT,
-      std_turn TEXT,
-      std_birth_date TEXT,
-      std_responsible_id UUID REFERENCES legal_responsible(id),
-      std_profile_image TEXT,
-      std_observations TEXT,
-      std_is_aee BOOLEAN DEFAULT FALSE,
-      std_pcd_status TEXT,
-      std_cid TEXT,
-      std_investigation_description TEXT,
-      std_school_need TEXT[],
-      std_pedagogical_evaluation_type TEXT,
-      std_status TEXT DEFAULT 'Ativo',
-      std_school_academic_year TEXT,
-      std_manual_insert BOOLEAN DEFAULT FALSE,
-      std_gender TEXT,
-      std_cpf TEXT,
-      std_matricula TEXT,
-      std_signed_form BOOLEAN DEFAULT FALSE,
-      std_legal_consent BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`,
-    `COMMENT ON TABLE students IS 'Tabela de Registro de Estudantes.'`,
-    /*
-    
     SGE Students Extracted Data Table [Tabela de importação de dados do aluno | SGE -> Aplicativo |]
 
     */
@@ -146,8 +112,13 @@ export async function initDb() {
       app_school_need TEXT[],
       app_pedagogical_evaluation_type TEXT,
       app_school_academic_year TEXT,
+      app_grade TEXT,
       app_classroom TEXT,
+      app_room TEXT,
+      app_turn TEXT,
       app_manual_insert BOOLEAN DEFAULT TRUE,
+      app_signed_form BOOLEAN DEFAULT FALSE,
+      app_legal_consent BOOLEAN DEFAULT FALSE,
       
       sge_student_registration TEXT,
       sge_birthday TEXT,
@@ -377,6 +348,53 @@ export async function initDb() {
       await query(q);
     } catch (err) {
       console.error(`Database init error on query: ${q.substring(0, 50)}...`, err);
+    }
+  }
+
+  // Migration: Ensure all columns exist in sge_extracted_data
+  const migrations = [
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_responsible_id UUID REFERENCES legal_responsible(id)`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_gender TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_observations TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_is_aee BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_pcd_status TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_cid TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_investigation_description TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_school_need TEXT[]`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_pedagogical_evaluation_type TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_school_academic_year TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_grade TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_classroom TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_room TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_turn TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_manual_insert BOOLEAN DEFAULT TRUE`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_signed_form BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS app_legal_consent BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_photo TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_civil_name TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_social_name TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_transgender BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_cpf TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_class_number TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_class_name TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_student_registration TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_birthday TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_pcd_info TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_school_academic_year TEXT`,
+    `ALTER TABLE sge_extracted_data ADD COLUMN IF NOT EXISTS sge_status TEXT DEFAULT 'Ativo'`,
+    `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_profile_image TEXT`,
+    `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_legal_consent BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_status BOOLEAN DEFAULT TRUE`,
+    // Ensure occurrences points to sge_extracted_data
+    `ALTER TABLE occurrences DROP CONSTRAINT IF EXISTS occurrences_occ_student_id_fkey`,
+    `ALTER TABLE occurrences ADD CONSTRAINT occurrences_occ_student_id_fkey FOREIGN KEY (occ_student_id) REFERENCES sge_extracted_data(id)`
+  ];
+
+  for (const m of migrations) {
+    try {
+      await query(m);
+    } catch (err) {
+      console.error(`Migration error: ${m}`, err);
     }
   }
 

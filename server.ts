@@ -387,8 +387,8 @@ async function startServer() {
 
           await query("UPDATE sge_extracted_data SET sge_photo = $1 WHERE id = $2", [base64, record.id]);
           
-          // Também atualiza a tabela students se o ID existir lá
-          await query("UPDATE students SET std_profile_image = $1 WHERE id = $2", [base64, record.id]);
+          // Também atualiza a tabela sge_extracted_data se o ID existir lá
+          await query("UPDATE sge_extracted_data SET sge_photo = $1 WHERE id = $2", [base64, record.id]);
           
           successCount++;
         } catch (err) {
@@ -494,7 +494,7 @@ async function startServer() {
       // Link students if provided
       if (r.linkedStudents && r.linkedStudents.length > 0) {
         for (const student of r.linkedStudents) {
-          await query("UPDATE students SET std_responsible_id = $1 WHERE id = $2", [respId, student.id]);
+          await query("UPDATE sge_extracted_data SET app_responsible_id = $1 WHERE id = $2", [respId, student.id]);
         }
       }
 
@@ -565,8 +565,7 @@ async function startServer() {
       const result = await query(`
         SELECT COUNT(*) AS total_number_students
         FROM sge_extracted_data
-        WHERE RIGHT(sge_class_name, 4) = EXTRACT(YEAR FROM CURRENT_DATE)::text
-          AND sge_status = 'Ativo'
+        WHERE sge_status = 'Ativo'
       `);
       res.json({ total: parseInt(result.rows[0].total_number_students) || 0 });
     } catch (err) {
@@ -578,7 +577,6 @@ async function startServer() {
     const { search, mode } = req.query;
     try {
       const currentYear = new Date().getFullYear().toString();
-      
       let queryStr = `
         WITH current_month_occurrences AS (
             SELECT 
@@ -600,20 +598,41 @@ async function startServer() {
         SELECT 
           e.id,
           e.sge_civil_name as name,
-          e.sge_social_name as social_name,
+          e.sge_social_name as "socialName",
           e.sge_class_name as classroom,
-          e.sge_photo as profile_image,
-          e.sge_birthday as birth_date,
+          e.sge_photo as "profileImage",
+          e.sge_birthday as "birthDate",
           e.sge_status as status,
-          e.sge_pcd_info as pcd_info,
+          e.sge_pcd_info as "pcdInfo",
           e.sge_transgender as transgender,
-          COALESCE(cmo.max_severity, 0) as month_severity,
-          r.resp_name, r.resp_relationship, r.resp_other_relationship, 
-          r.resp_contact_phone, r.resp_backup_phone, r.resp_landline, 
-          r.resp_work_phone, r.resp_email
+          e.app_grade as grade,
+          e.app_room as room,
+          e.app_turn as turn,
+          e.app_observations as observations,
+          e.app_is_aee as "isAEE",
+          e.app_pcd_status as "pcdStatus",
+          e.app_cid as cid,
+          e.app_investigation_description as "investigationDescription",
+          e.app_school_need as "schoolNeed",
+          e.app_pedagogical_evaluation_type as "pedagogicalEvaluationType",
+          e.app_school_academic_year as "schoolAcademicYear",
+          e.app_manual_insert as "manualInsert",
+          e.app_gender as gender,
+          e.sge_cpf as cpf,
+          e.sge_student_registration as matricula,
+          e.app_signed_form as "signedForm",
+          e.app_legal_consent as "legalConsent",
+          COALESCE(cmo.max_severity, 0) as "monthSeverity",
+          r.resp_name as "responsibleName", 
+          r.resp_relationship as relationship, 
+          r.resp_other_relationship as "otherRelationship", 
+          r.resp_contact_phone as "contactPhone", 
+          r.resp_backup_phone as "backupPhone", 
+          r.resp_landline as landline, 
+          r.resp_work_phone as "workPhone", 
+          r.resp_email as email
         FROM sge_extracted_data e
-        LEFT JOIN students s ON e.id = s.id
-        LEFT JOIN legal_responsible r ON s.std_responsible_id = r.id 
+        LEFT JOIN legal_responsible r ON e.app_responsible_id = r.id 
         LEFT JOIN current_month_occurrences cmo ON e.id = cmo.occ_student_id
         WHERE e.sge_status = 'Ativo'
       `;
@@ -641,23 +660,37 @@ async function startServer() {
       res.json(result.rows.map(s => ({
         id: s.id,
         name: s.name,
-        social_name: s.social_name,
-        grade: s.classroom ? s.classroom.split(' - ')[0] : '',
+        socialName: s.socialName,
+        grade: s.grade || (s.classroom ? s.classroom.split(' - ')[0] : ''),
         classroom: s.classroom,
-        profile_image: s.profile_image,
-        birth_date: s.birth_date,
+        room: s.room,
+        turn: s.turn,
+        birthDate: s.birthDate,
+        profileImage: s.profileImage,
+        observations: s.observations,
+        isAEE: s.isAEE,
+        pcdStatus: s.pcdStatus,
+        cid: s.cid,
+        investigationDescription: s.investigationDescription,
+        schoolNeed: s.schoolNeed,
+        pedagogicalEvaluationType: s.pedagogicalEvaluationType,
         status: s.status,
-        month_severity: s.month_severity,
-        responsible_name: s.resp_name,
-        relationship: s.resp_relationship,
-        other_relationship: s.resp_other_relationship,
-        contact_phone: s.resp_contact_phone,
-        backup_phone: s.resp_backup_phone,
-        landline: s.resp_landline,
-        work_phone: s.resp_work_phone,
-        email: s.resp_email,
-        pcd_status: s.pcd_info ? 'com_laudo' : '',
-        pcd_info: s.pcd_info,
+        schoolAcademicYear: s.schoolAcademicYear,
+        manualInsert: s.manualInsert,
+        gender: s.gender,
+        cpf: s.cpf,
+        matricula: s.matricula,
+        signedForm: s.signedForm,
+        legalConsent: s.legalConsent,
+        monthSeverity: s.monthSeverity,
+        responsibleName: s.responsibleName,
+        relationship: s.relationship,
+        otherRelationship: s.otherRelationship,
+        contactPhone: s.contactPhone,
+        backupPhone: s.backupPhone,
+        landline: s.landline,
+        workPhone: s.workPhone,
+        email: s.email,
         transgender: s.transgender
       })));
     } catch (err) {
@@ -678,16 +711,10 @@ async function startServer() {
         [respId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
       );
 
-      // 2. Insert Student
+      // 2. Insert into sge_extracted_data
       await query(
-        "INSERT INTO students (id, std_name, std_social_name, std_grade, std_classroom, std_room, std_turn, std_birth_date, std_responsible_id, std_profile_image, std_observations, std_is_aee, std_pcd_status, std_cid, std_investigation_description, std_school_need, std_pedagogical_evaluation_type, std_status, std_school_academic_year, std_manual_insert, std_gender, std_cpf, std_matricula, std_signed_form, std_legal_consent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)",
-        [s.id, s.name, s.socialName, s.grade, s.classroom, s.room, s.turn, s.birthDate, respId, s.profileImage, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.status || 'Ativo', s.schoolAcademicYear, s.manualInsert || false, s.gender, s.cpf, s.matricula, s.signedForm || false, s.legalConsent || false]
-      );
-
-      // 3. Insert into sge_extracted_data to ensure student appears in lists
-      await query(
-        "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
-        [s.id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status || 'Ativo']
+        "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status, app_responsible_id, app_observations, app_is_aee, app_pcd_status, app_cid, app_investigation_description, app_school_need, app_pedagogical_evaluation_type, app_grade, app_classroom, app_room, app_turn, app_manual_insert, app_signed_form, app_legal_consent, app_gender) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)",
+        [s.id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status || 'Ativo', respId, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert || false, s.signedForm || false, s.legalConsent || false, s.gender]
       );
       
       await query("COMMIT");
@@ -704,14 +731,14 @@ async function startServer() {
       await query("BEGIN");
       
       // Get responsible ID before deleting student
-      const student = await query("SELECT std_responsible_id FROM students WHERE id = $1", [id]);
-      const respId = student.rows[0]?.std_responsible_id;
+      const student = await query("SELECT app_responsible_id FROM sge_extracted_data WHERE id = $1", [id]);
+      const respId = student.rows[0]?.app_responsible_id;
 
       // Delete occurrences
       await query("DELETE FROM occurrences WHERE occ_student_id = $1", [id]);
       
-      // Delete student
-      await query("DELETE FROM students WHERE id = $1", [id]);
+      // Delete student from sge_extracted_data
+      await query("DELETE FROM sge_extracted_data WHERE id = $1", [id]);
       
       // Delete responsible
       if (respId) {
@@ -733,8 +760,8 @@ async function startServer() {
       await query("BEGIN");
       
       // Get responsible ID
-      const student = await query("SELECT std_responsible_id FROM students WHERE id = $1", [id]);
-      const respId = student.rows[0]?.std_responsible_id;
+      const student = await query("SELECT app_responsible_id FROM sge_extracted_data WHERE id = $1", [id]);
+      const respId = student.rows[0]?.app_responsible_id;
 
       if (respId) {
         // Update Responsible
@@ -744,16 +771,10 @@ async function startServer() {
         );
       }
 
-      // Update Student
+      // Update sge_extracted_data
       await query(
-        "UPDATE students SET std_name=$1, std_social_name=$2, std_grade=$3, std_classroom=$4, std_room=$5, std_turn=$6, std_birth_date=$7, std_profile_image=$8, std_observations=$9, std_is_aee=$10, std_pcd_status=$11, std_cid=$12, std_investigation_description=$13, std_school_need=$14, std_pedagogical_evaluation_type=$15, std_status=$16, std_school_academic_year=$17, std_manual_insert=$18, std_gender=$19, std_cpf=$20, std_matricula=$21, std_signed_form=$22, std_legal_consent=$23 WHERE id=$24",
-        [s.name, s.socialName, s.grade, s.classroom, s.room, s.turn, s.birthDate, s.profileImage, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.status, s.schoolAcademicYear, s.manualInsert, s.gender, s.cpf, s.matricula, s.signedForm || false, s.legalConsent || false, id]
-      );
-
-      // Update sge_extracted_data to ensure student list is consistent
-      await query(
-        "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT (id) DO UPDATE SET sge_photo=EXCLUDED.sge_photo, sge_civil_name=EXCLUDED.sge_civil_name, sge_social_name=EXCLUDED.sge_social_name, sge_transgender=EXCLUDED.sge_transgender, sge_cpf=EXCLUDED.sge_cpf, sge_class_name=EXCLUDED.sge_class_name, sge_student_registration=EXCLUDED.sge_student_registration, sge_birthday=EXCLUDED.sge_birthday, sge_pcd_info=EXCLUDED.sge_pcd_info, sge_school_academic_year=EXCLUDED.sge_school_academic_year, sge_status=EXCLUDED.sge_status",
-        [id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status]
+        "UPDATE sge_extracted_data SET sge_photo=$1, sge_civil_name=$2, sge_social_name=$3, sge_transgender=$4, sge_cpf=$5, sge_class_name=$6, sge_student_registration=$7, sge_birthday=$8, sge_pcd_info=$9, sge_school_academic_year=$10, sge_status=$11, app_observations=$12, app_is_aee=$13, app_pcd_status=$14, app_cid=$15, app_investigation_description=$16, app_school_need=$17, app_pedagogical_evaluation_type=$18, app_grade=$19, app_classroom=$20, app_room=$21, app_turn=$22, app_manual_insert=$23, app_signed_form=$24, app_legal_consent=$25, app_gender=$26 WHERE id=$27",
+        [s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert, s.signedForm || false, s.legalConsent || false, s.gender, id]
       );
       
       await query("COMMIT");
@@ -1030,7 +1051,6 @@ async function startServer() {
 
       // Drop all tables to simulate "DROP DATABASE" behavior
       await query("DROP TABLE IF EXISTS occurrences CASCADE");
-      await query("DROP TABLE IF EXISTS students CASCADE");
       await query("DROP TABLE IF EXISTS legal_responsible CASCADE");
       await query("DROP TABLE IF EXISTS access_logs CASCADE");
       await query("DROP TABLE IF EXISTS sge_extracted_data CASCADE");
@@ -1049,7 +1069,7 @@ async function startServer() {
     const { students, occurrences, users, logs } = req.body;
     try {
       await query("BEGIN");
-      await query("TRUNCATE occurrences, students, legal_responsible, access_logs RESTART IDENTITY CASCADE");
+      await query("TRUNCATE occurrences, sge_extracted_data, legal_responsible, access_logs RESTART IDENTITY CASCADE");
       await query("DELETE FROM users WHERE id != 'admin_seed'");
 
       if (students && Array.isArray(students)) {
@@ -1061,8 +1081,8 @@ async function startServer() {
           );
 
           await query(
-            "INSERT INTO students (id, std_name, std_social_name, std_grade, std_classroom, std_room, std_turn, std_birth_date, std_responsible_id, std_profile_image, std_observations, std_is_aee, std_pcd_status, std_cid, std_investigation_description, std_school_need, std_pedagogical_evaluation_type, std_status, std_school_academic_year, std_manual_insert) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)",
-            [s.id, s.name, s.socialName || s.social_name, s.grade, s.classroom, s.room, s.turn, s.birthDate || s.birth_date, respId, s.profileImage || s.profile_image, s.observations, s.isAEE || s.is_aee || false, s.pcdStatus || s.pcd_status, s.cid, s.investigationDescription || s.investigation_description, s.schoolNeed || s.school_need, s.pedagogicalEvaluationType || s.pedagogical_evaluation_type, s.status || 'Ativo', s.schoolAcademicYear, s.manualInsert || false]
+            "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status, app_responsible_id, app_observations, app_is_aee, app_pcd_status, app_cid, app_investigation_description, app_school_need, app_pedagogical_evaluation_type, app_grade, app_classroom, app_room, app_turn, app_manual_insert) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)",
+            [s.id, s.profileImage || s.profile_image, s.name, s.socialName || s.social_name, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate || s.birth_date, s.cid, s.schoolAcademicYear, s.status || 'Ativo', respId, s.observations, s.isAEE || s.is_aee || false, s.pcdStatus || s.pcd_status, s.cid, s.investigationDescription || s.investigation_description, s.schoolNeed || s.school_need, s.pedagogicalEvaluationType || s.pedagogical_evaluation_type, s.grade, s.classroom, s.room, s.turn, s.manualInsert || false]
           );
         }
       }

@@ -121,24 +121,24 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
   const handleBackup = async () => {
     setLoading(true);
     try {
-      const [studentsRes, occurrencesRes, usersRes, logsRes] = await Promise.all([
+      const [sgeRes, occurrencesRes, usersRes, logsRes] = await Promise.all([
         fetch('/api/students'),
         fetch('/api/occurrences'),
         fetch('/api/users'),
         fetch('/api/logs')
       ]);
 
-      if (!studentsRes.ok || !occurrencesRes.ok || !usersRes.ok || !logsRes.ok) {
+      if (!sgeRes.ok || !occurrencesRes.ok || !usersRes.ok || !logsRes.ok) {
         throw new Error("Falha ao buscar dados para backup");
       }
 
-      const students = await studentsRes.json();
+      const sgeExtractedData = await sgeRes.json();
       const occurrences = await occurrencesRes.json();
       const users = await usersRes.json();
       const logs = await logsRes.json();
 
       const backupData = {
-        students,
+        sgeExtractedData,
         occurrences,
         users,
         logs,
@@ -245,7 +245,8 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
         if (!content) throw new Error("Arquivo vazio");
 
         const data = JSON.parse(content);
-        const hasStudents = Object.prototype.hasOwnProperty.call(data, 'students');
+        const sgeData = data.sgeExtractedData || data.students;
+        const hasStudents = !!sgeData;
         const hasOccurrences = Object.prototype.hasOwnProperty.call(data, 'occurrences');
         const hasUsers = Object.prototype.hasOwnProperty.call(data, 'users');
 
@@ -254,7 +255,7 @@ const SystemManagement: React.FC<SystemManagementProps> = ({ onRecordLog, curren
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              students: typeof data.students === 'string' ? JSON.parse(data.students) : data.students,
+              students: typeof sgeData === 'string' ? JSON.parse(sgeData) : sgeData,
               occurrences: typeof data.occurrences === 'string' ? JSON.parse(data.occurrences) : data.occurrences,
               users: typeof data.users === 'string' ? JSON.parse(data.users) : data.users,
               logs: typeof data.logs === 'string' ? JSON.parse(data.logs) : data.logs

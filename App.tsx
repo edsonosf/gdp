@@ -26,7 +26,7 @@ import VisualIdentity from './components/VisualIdentity';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('LOGIN');
-  const [students, setStudents] = useState<Student[]>([]);
+  const [sgeExtractedData, setSgeExtractedData] = useState<Student[]>([]);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
@@ -75,7 +75,7 @@ const App: React.FC = () => {
         throw new Error("Falha ao conectar com o servidor. Verifique se o banco de dados está configurado.");
       }
 
-      setStudents(await studentsRes.json());
+      setSgeExtractedData(await studentsRes.json());
       setOccurrences(await occurrencesRes.json());
       setUsers(await usersRes.json());
       
@@ -218,7 +218,7 @@ const App: React.FC = () => {
       });
       
       if (res.ok) {
-        setStudents(prev => [...prev, newStudent]);
+        setSgeExtractedData(prev => [...prev, newStudent]);
         recordLog('critical.action', 'success', undefined, `Cadastro de aluno: ${studentData.name}`);
         alert('Aluno cadastrado com sucesso no banco de dados!');
         setView('STUDENT_LIST');
@@ -380,7 +380,7 @@ const App: React.FC = () => {
         });
         
         if (res.ok) {
-          setStudents(prev => prev.filter(s => s.id !== studentId));
+          setSgeExtractedData(prev => prev.filter(s => s.id !== studentId));
           setOccurrences(prev => prev.filter(occ => occ.studentId !== studentId));
           recordLog('critical.action', 'success', undefined, `Aluno excluído: ${studentName} (${studentId})`);
           alert('Aluno e suas ocorrências foram removidos do sistema.');
@@ -401,7 +401,7 @@ const App: React.FC = () => {
       });
       
       if (res.ok) {
-        setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+        setSgeExtractedData(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
         recordLog('critical.action', 'success', undefined, `Dados do aluno atualizados: ${updatedStudent.name}`);
         setView('STUDENT_LIST');
         alert('Dados do aluno atualizados com sucesso!');
@@ -427,7 +427,7 @@ const App: React.FC = () => {
         const studentsRes = await fetch('/api/students');
         if (studentsRes.ok) {
           const studentsData = await studentsRes.json();
-          setStudents(studentsData);
+          setSgeExtractedData(studentsData);
         }
       }
     } catch (err) {
@@ -452,7 +452,7 @@ const App: React.FC = () => {
     return [...inactiveOnes].sort((a, b) => b.id.localeCompare(a.id))[0];
   }, [users]);
 
-  const filteredStudents = students.filter(s => 
+  const filteredStudents = sgeExtractedData.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     s.grade.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -499,7 +499,7 @@ const App: React.FC = () => {
         return <UserRegistrationForm onBack={() => setView('LOGIN')} onRegister={handleRegisterUser} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} />;
       case 'DASHBOARD':
         return <Dashboard 
-          students={students} 
+          students={sgeExtractedData} 
           occurrences={occurrences} 
           activeStudentsCount={activeStudentsCount}
           isAdmin={currentUser?.isSystemAdmin}
@@ -520,7 +520,7 @@ const App: React.FC = () => {
       case 'NEW_OCCURRENCE_MESSAGE':
         const nextId = unreadOccurrenceIds[0];
         const occurrence = occurrences.find(o => o.id === nextId) || null;
-        const student = occurrence ? students.find(s => s.id === occurrence.studentId) || null : null;
+        const student = occurrence ? sgeExtractedData.find(s => s.id === occurrence.studentId) || null : null;
         return <NewOccurrenceMessage 
           occurrence={occurrence} 
           student={student} 
@@ -532,7 +532,7 @@ const App: React.FC = () => {
           <OccurrenceMonitoring 
             currentUser={currentUser} 
             occurrences={occurrences} 
-            students={students} 
+            students={sgeExtractedData} 
             onResolve={handleResolveOccurrence}
             onSelectStudent={(s) => { setSelectedStudent(s); setView('STUDENT_DETAIL'); }}
           />
@@ -540,7 +540,7 @@ const App: React.FC = () => {
       case 'PENDING_OCCURRENCES':
         return (
           <PendingOccurrences 
-            students={students} 
+            students={sgeExtractedData} 
             occurrences={occurrences} 
             initialAnalyzingStudent={selectedStudent}
             onStartAnalysis={(s) => setSelectedStudent(s)}
@@ -571,13 +571,13 @@ const App: React.FC = () => {
       case 'FORMALIZATION':
         return selectedStudent ? <Formalization student={selectedStudent} onBack={() => setView('PENDING_OCCURRENCES')} /> : null;
       case 'ADD_STUDENT':
-        return <StudentRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} workShifts={workShifts} genders={genders} />;
+        return <StudentRegistrationForm students={sgeExtractedData} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} workShifts={workShifts} genders={genders} />;
       case 'ADD_RESPONSIBLE':
-        return <ResponsibleRegistrationForm students={students} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} kinship={kinship} workShifts={workShifts} />;
+        return <ResponsibleRegistrationForm students={sgeExtractedData} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} kinship={kinship} workShifts={workShifts} />;
       case 'EDIT_STUDENT':
         return (
           <StudentRegistrationForm 
-            students={students} 
+            students={sgeExtractedData} 
             initialData={selectedStudent || undefined}
             onBack={() => setView('STUDENT_LIST')} 
             onRegister={(data) => handleUpdateStudent(data as Student)} 
@@ -589,7 +589,7 @@ const App: React.FC = () => {
       case 'ADD_OCCURRENCE':
         return (
           <OccurrenceForm 
-            students={students} 
+            students={sgeExtractedData} 
             occurrences={occurrences} 
             currentUser={currentUser}
             initialStudentId={selectedStudent?.id}
@@ -606,9 +606,9 @@ const App: React.FC = () => {
       case 'MY_PROFILE':
         return currentUser ? <UserEditForm user={currentUser} occurrences={occurrences} onBack={() => setView('DASHBOARD')} onSuccess={handleUpdateUser} onDelete={handleDeleteUser} showAdminToggle={false} adminCount={adminCount} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} /> : null;
       case 'REPORTS':
-        return <Reports occurrences={occurrences} students={students} onIndividualReportSearch={() => setView('INDIVIDUAL_REPORT_SEARCH')} />;
+        return <Reports occurrences={occurrences} students={sgeExtractedData} onIndividualReportSearch={() => setView('INDIVIDUAL_REPORT_SEARCH')} />;
       case 'INDIVIDUAL_REPORT_SEARCH':
-        return <IndividualReportSearch students={students} onSelectStudent={(s) => { setSelectedStudent(s); setView('STUDENT_DETAIL'); }} />;
+        return <IndividualReportSearch students={sgeExtractedData} onSelectStudent={(s) => { setSelectedStudent(s); setView('STUDENT_DETAIL'); }} />;
       default:
         return <div>Em breve...</div>;
     }
