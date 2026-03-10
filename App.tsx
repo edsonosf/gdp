@@ -9,6 +9,7 @@ import StudentDetail from './components/StudentDetail';
 import OccurrenceForm from './components/OccurrenceForm';
 import UserRegistrationForm from './components/UserRegistrationForm';
 import UserManagement from './components/UserManagement';
+import PasswordResetForm from './components/PasswordResetForm';
 import Reports from './components/Reports';
 import UserEditForm from './components/UserEditForm';
 import StudentRegistrationForm from './components/StudentRegistrationForm';
@@ -31,6 +32,8 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [activeStudentsCount, setActiveStudentsCount] = useState<number>(0);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [requirePasswordChange, setRequirePasswordChange] = useState(false);
+  const [loginPassword, setLoginPassword] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -162,15 +165,29 @@ const App: React.FC = () => {
     // Apenas em memória para esta sessão
   }, [unreadOccurrenceIds]);
 
-  const handleLogin = (user: User) => {
+  const handleLogin = (user: User, passwordUsed: string) => {
     setCurrentUser(user);
-    recordLog('user.login', 'success', user.id);
+    if (user.requirePasswordChange) {
+      setLoginPassword(passwordUsed);
+      setRequirePasswordChange(true);
+    } else {
+      setView('DASHBOARD');
+    }
+  };
+
+  const handlePasswordResetSuccess = () => {
+    setRequirePasswordChange(false);
+    if (currentUser) {
+      setCurrentUser({ ...currentUser, requirePasswordChange: false });
+    }
     setView('DASHBOARD');
   };
 
   const handleLogout = useCallback(() => {
     recordLog('user.logout', 'success');
     setCurrentUser(null);
+    setRequirePasswordChange(false);
+    setLoginPassword('');
     setView('LOGIN');
   }, [recordLog]);
 
@@ -458,6 +475,15 @@ const App: React.FC = () => {
   );
 
   const renderContent = () => {
+    // Prioritize Login and Registration views so they are not blocked by loading/errors
+    if (view === 'LOGIN') {
+      return <LoginForm onLogin={handleLogin} onGoToRegister={() => setView('USER_REGISTRATION')} />;
+    }
+
+    if (view === 'USER_REGISTRATION') {
+      return <UserRegistrationForm onBack={() => setView('LOGIN')} onRegister={handleRegisterUser} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} />;
+    }
+
     if (isInitialLoading) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
@@ -493,10 +519,6 @@ const App: React.FC = () => {
     }
 
     switch (view) {
-      case 'LOGIN':
-        return <LoginForm users={users} onLogin={handleLogin} onGoToRegister={() => setView('USER_REGISTRATION')} onRecordLog={recordLog} />;
-      case 'USER_REGISTRATION':
-        return <UserRegistrationForm onBack={() => setView('LOGIN')} onRegister={handleRegisterUser} curricularComponents={curricularComponents} subjects={subjects} workSchedules={workSchedules} workShifts={workShifts} positions={positions} genders={genders} organizationalChart={organizationalChart} localUnits={localUnits} />;
       case 'DASHBOARD':
         return <Dashboard 
           students={sgeExtractedData} 
@@ -660,22 +682,39 @@ const App: React.FC = () => {
 
   if (view === 'LOGIN' || view === 'USER_REGISTRATION') return (
     <div className="flex flex-col h-screen max-w-md mx-auto bg-slate-50 shadow-xl overflow-hidden overflow-y-auto">
+      {requirePasswordChange && currentUser && (
+        <PasswordResetForm 
+          userId={currentUser.id} 
+          onSuccess={handlePasswordResetSuccess} 
+          onLogout={handleLogout} 
+        />
+      )}
       {renderContent()}
     </div>
   );
 
   return (
-    <Layout 
-      currentView={view} 
-      setView={setView} 
-      title={getTitle()} 
-      isAdmin={currentUser?.isSystemAdmin} 
-      showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE', 'VISUAL_IDENTITY'].includes(view)} 
-      onBack={handleBack}
-      onLogout={handleLogout}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      {requirePasswordChange && currentUser && (
+        <PasswordResetForm 
+          userId={currentUser.id} 
+          currentPassword={loginPassword}
+          onSuccess={handlePasswordResetSuccess} 
+          onLogout={handleLogout} 
+        />
+      )}
+      <Layout 
+        currentView={view} 
+        setView={setView} 
+        title={getTitle()} 
+        isAdmin={currentUser?.isSystemAdmin} 
+        showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE', 'VISUAL_IDENTITY'].includes(view)} 
+        onBack={handleBack}
+        onLogout={handleLogout}
+      >
+        {renderContent()}
+      </Layout>
+    </>
   );
 };
 

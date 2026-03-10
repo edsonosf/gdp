@@ -30,6 +30,120 @@ async function startServer() {
 
   // API Routes
   
+  // Login Endpoint
+  app.post("/api/login", async (req, res) => {
+    const { usuario, password, deviceInfo } = req.body;
+
+    const recordLoginLog = async (status: string, userId: string | null, description: string) => {
+      await query(
+        "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description, acc_user_agent, acc_device_info) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          new Date().toISOString(),
+          userId || usuario || 'anonymous',
+          'user.login',
+          status,
+          description,
+          req.headers['user-agent'] || '',
+          JSON.stringify(deviceInfo || {})
+        ]
+      );
+    };
+
+    if (!usuario || !password) {
+      await recordLoginLog('failure', null, 'Por favor, preencha os dados corretamente.');
+      return res.status(400).json({ error: "Por favor, preencha os dados corretamente." });
+    }
+
+    try {
+      // Busca o usuário por CPF ou Email
+      const result = await query(
+        `SELECT * FROM users WHERE 
+         usr_cpf = $1 OR 
+         usr_email = $1 OR 
+         REPLACE(REPLACE(usr_cpf, '.', ''), '-', '') = $2`,
+        [usuario, usuario.replace(/\D/g, '')]
+      );
+
+      if (result.rows.length === 0) {
+        await recordLoginLog('failure', null, 'Tentativa com Usuário não cadastrado');
+        return res.status(404).json({ error: "Tentativa com Usuário não cadastrado" });
+      }
+
+      const user = result.rows[0];
+      const unmaskedPhone = user.usr_phone ? user.usr_phone.replace(/\D/g, '') : '';
+      const isValidPassword = user.usr_password === password || unmaskedPhone === password;
+
+      if (!isValidPassword) {
+        await recordLoginLog('failure', user.id, 'Senha incorreta');
+        return res.status(401).json({ error: "Senha incorreta" });
+      }
+
+      if (user.usr_status === 'Inativo') {
+        await recordLoginLog('failure', user.id, 'Tentativa com conta inativa');
+        return res.status(403).json({ error: "Tentativa com conta inativa" });
+      }
+
+      // Verifica se é o primeiro logon bem-sucedido
+      const loginCountResult = await query(
+        "SELECT COUNT(*) FROM access_logs WHERE acc_user_id = $1 AND acc_event = 'user.login' AND acc_status = 'success'",
+        [user.id]
+      );
+      const isFirstLogin = parseInt(loginCountResult.rows[0].count) === 0;
+
+      // Sucesso
+      await recordLoginLog('success', user.id, 'Login realizado com sucesso');
+      
+      // Remove a senha do objeto de retorno e mapeia para nomes amigáveis no frontend
+      const userResponse = {
+        id: user.id,
+        name: user.usr_name,
+        socialName: user.usr_social_name,
+        useSocialName: user.usr_use_social_name,
+        role: user.usr_role,
+        email: user.usr_email,
+        cpf: user.usr_cpf,
+        status: user.usr_status,
+        isSystemAdmin: user.usr_is_system_admin,
+        profileImage: user.usr_profile_image,
+        requirePasswordChange: isFirstLogin
+      };
+      
+      res.json(userResponse);
+
+    } catch (err) {
+      console.error("Login error:", err);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Update Password Endpoint
+  app.put("/api/users/:id/password", async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: "A nova senha deve ter pelo menos 6 caracteres." });
+    }
+
+    try {
+      await query(
+        "UPDATE users SET usr_password = $1 WHERE id = $2",
+        [newPassword, id]
+      );
+      
+      // Log the password change
+      await query(
+        "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description) VALUES ($1, $2, $3, $4, $5)",
+        [new Date().toISOString(), id, 'user.password_change', 'success', 'Senha alterada com sucesso no primeiro logon']
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Password update error:", err);
+      res.status(500).json({ error: "Erro ao atualizar a senha" });
+    }
+  });
+
   // Sync Endpoint
   app.post("/api/sync", async (req, res) => {
     const { url, user, password, userId } = req.body;

@@ -88,6 +88,7 @@ export interface User {
   // Campos para horário personalizado
   hasCustomSchedule?: boolean;
   customScheduleDetails?: string[];
+  requirePasswordChange?: boolean;
 }
 
 export interface AccessLog {

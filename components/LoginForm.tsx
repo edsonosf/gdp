@@ -3,17 +3,16 @@ import React, { useState } from 'react';
 import { User, AccessLog } from '../types';
 
 interface LoginFormProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User, passwordUsed: string) => void;
   onGoToRegister: () => void;
-  onRecordLog: (event: AccessLog['event'], status: AccessLog['status'], userId?: string, description?: string) => void;
-  users: User[];
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecordLog, users }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister }) => {
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const maskCPF = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -38,59 +37,63 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     
     if (usuario.length < 1 || password.length < 4) {
-        alert('Por favor, preencha os dados corretamente.');
+        setErrorMessage('Por favor, preencha os dados corretamente.');
         return;
     }
 
     setLoading(true);
     
-    // Busca no banco de dados local (carregado via API no App.tsx)
-    setTimeout(() => {
-        const foundUser = users.find(u => 
-            u.cpf === usuario || 
-            u.email === usuario || 
-            u.cpf?.replace(/\D/g, '') === usuario.replace(/\D/g, '')
-        );
-        
-        if (!foundUser) {
-            onRecordLog('user.login', 'failure', usuario, 'Tentativa com Usuário não cadastrado');
-            alert('Usuário não encontrado.');
-            setLoading(false);
-            return;
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                usuario, 
+                password,
+                deviceInfo: {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            onLogin(data, password);
+        } else {
+            setErrorMessage(data.error || 'Erro ao realizar login.');
         }
-
-        const unmaskedPhone = foundUser.phone?.replace(/\D/g, '');
-        const isValidPassword = foundUser.password === password || unmaskedPhone === password;
-
-        if (!isValidPassword) {
-            onRecordLog('user.login', 'failure', foundUser.cpf, 'Senha incorreta');
-            alert('Senha incorreta.');
-            setLoading(false);
-            return;
-        }
-
-        if (foundUser.status === 'Inativo') {
-            onRecordLog('user.login', 'failure', foundUser.cpf, 'Tentativa com conta inativa');
-            alert('Seu acesso está desativado. Por favor, contate o administrador do sistema.');
-            setLoading(false);
-            return;
-        }
-
+    } catch (err) {
+        console.error("Login error:", err);
+        setErrorMessage('Falha ao conectar com o servidor.');
+    } finally {
         setLoading(false);
-        onLogin(foundUser);
-    }, 1200);
+    }
   };
 
   const handleGoogleLogin = () => {
-    alert("O login via Google não está configurado para este ambiente. Utilize CPF e Senha.");
+    setErrorMessage("O login via Google não está configurado para este ambiente. Utilize CPF e Senha.");
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-white p-6 justify-center">
+    <div className="flex flex-col min-h-full bg-white p-6 justify-center relative">
+      {/* Error Message Banner */}
+      {errorMessage && (
+        <div 
+          onClick={() => setErrorMessage(null)}
+          className="absolute top-4 left-6 right-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl cursor-pointer z-50 animate-bounce shadow-md flex items-center justify-between"
+        >
+          <span className="text-sm font-medium">{errorMessage}</span>
+          <i className="fas fa-times text-xs opacity-50"></i>
+        </div>
+      )}
+
       <div className="text-center mb-10">
         <div className="w-20 h-20 rounded-2xl mx-auto flex items-center justify-center text-white text-3xl mb-4 shadow-lg">
           
@@ -103,14 +106,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onGoToRegister, onRecord
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Usuário (CPF ou E-mail)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Usuário</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
               <i className="fas fa-id-card"></i>
             </span>
             <input
               type="text"
-              placeholder="Digite seu CPF ou e-mail"
+              placeholder="Digite seu usuário"
               className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
               value={usuario}
               onChange={handleUsuarioChange}
