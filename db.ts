@@ -67,10 +67,10 @@ export async function initDb() {
     `CREATE TABLE IF NOT EXISTS legal_responsible (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       resp_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      resp_name TEXT NOT NULL,
-      resp_relationship TEXT NOT NULL,
+      resp_name TEXT,
+      resp_relationship TEXT,
       resp_other_relationship TEXT,
-      resp_contact_phone TEXT NOT NULL,
+      resp_contact_phone TEXT,
       resp_backup_phone TEXT,
       resp_landline TEXT,
       resp_work_phone TEXT,
@@ -385,6 +385,9 @@ export async function initDb() {
     `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_profile_image TEXT`,
     `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_legal_consent BOOLEAN DEFAULT FALSE`,
     `ALTER TABLE legal_responsible ADD COLUMN IF NOT EXISTS resp_status BOOLEAN DEFAULT TRUE`,
+    `ALTER TABLE legal_responsible ALTER COLUMN resp_name DROP NOT NULL`,
+    `ALTER TABLE legal_responsible ALTER COLUMN resp_relationship DROP NOT NULL`,
+    `ALTER TABLE legal_responsible ALTER COLUMN resp_contact_phone DROP NOT NULL`,
     // Ensure occurrences points to sge_extracted_data
     `ALTER TABLE occurrences DROP CONSTRAINT IF EXISTS occurrences_occ_student_id_fkey`,
     `ALTER TABLE occurrences ADD CONSTRAINT occurrences_occ_student_id_fkey FOREIGN KEY (occ_student_id) REFERENCES sge_extracted_data(id)`

@@ -6,14 +6,14 @@ import { calculateAge } from '../utils';
 
 interface SGEStudent {
   id: string;
-  profile_image: string;
+  profileImage: string;
   name: string;
-  social_name: string;
+  socialName: string;
   transgender: boolean;
   classroom: string;
-  birth_date: string;
-  pcd_info: string;
-  month_severity: number;
+  birthDate: string;
+  pcdInfo: string;
+  monthSeverity: number;
 }
 
 interface StudentListProps {
@@ -70,7 +70,7 @@ const StudentList: React.FC<StudentListProps> = ({ currentUser, onNavigate }) =>
         <input 
           type="text" 
           placeholder="Buscar por nome ou turma..." 
-          className="w-full pl-4 pr-10 py-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none" 
+          className="w-full pl-4 pr-10 py-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase" 
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)} 
         />
@@ -99,8 +99,8 @@ const StudentList: React.FC<StudentListProps> = ({ currentUser, onNavigate }) =>
         ) : students.length > 0 ? (
           students.map(student => {
             const isSelected = selectedIds.includes(student.id);
-            const displayName = student.social_name || student.name;
-            const age = calculateAge(student.birth_date);
+            const displayName = student.socialName || student.name;
+            const age = calculateAge(student.birthDate);
             
             return (
               <div 
@@ -111,14 +111,14 @@ const StudentList: React.FC<StudentListProps> = ({ currentUser, onNavigate }) =>
                 }`}
               >
                 <img 
-                  src={student.profile_image || DEFAULT_STUDENT_IMAGE} 
+                  src={student.profileImage || DEFAULT_STUDENT_IMAGE} 
                   alt={displayName} 
                   className="w-14 h-14 rounded-full object-cover border-2 border-slate-50 shadow-sm"
                   referrerPolicy="no-referrer"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
-                    <h3 className={`font-bold truncate ${getSeverityColor(student.month_severity)}`}>
+                    <h3 className={`font-bold truncate ${getSeverityColor(student.monthSeverity)}`}>
                       {displayName}
                     </h3>
                     <div className="flex space-x-1">

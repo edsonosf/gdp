@@ -9,6 +9,7 @@ interface StudentRegistrationFormProps {
   onBack: () => void;
   onRegister: (student: Omit<Student, 'id'> | Student) => void;
   onDelete?: (id: string, name: string) => void;
+  kinship: Option[];
   workShifts: Option[];
   genders: Option[];
 }
@@ -19,6 +20,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
   onBack, 
   onRegister, 
   onDelete,
+  kinship,
   workShifts,
   genders
 }) => {
@@ -50,7 +52,16 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     investigationDescription: initialData?.investigationDescription || '',
     schoolNeed: (initialData?.schoolNeed as any) || [],
     pedagogicalEvaluationType: initialData?.pedagogicalEvaluationType || '',
-    observations: initialData?.observations || ''
+    observations: initialData?.observations || '',
+    // Responsible fields
+    responsibleName: initialData?.responsibleName || '',
+    relationship: initialData?.relationship || '',
+    otherRelationship: initialData?.otherRelationship || '',
+    contactPhone: initialData?.contactPhone || '',
+    backupPhone: initialData?.backupPhone || '',
+    landline: initialData?.landline || '',
+    workPhone: initialData?.workPhone || '',
+    email: initialData?.email || ''
   });
 
   const [age, setAge] = useState<number | null>(null);
@@ -106,7 +117,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     const { name, value, type } = e.target;
     let finalValue = value;
     if (name === 'birthDate') finalValue = maskDate(value);
-    if (name === 'contactPhone' || name === 'backupPhone') finalValue = maskPhone(value);
+    if (['contactPhone', 'backupPhone', 'landline', 'workPhone'].includes(name)) finalValue = maskPhone(value);
     if (name === 'cpf') finalValue = maskCPF(value);
     if (name === 'matricula') finalValue = maskMatricula(value);
     if (type === 'checkbox') finalValue = (e.target as HTMLInputElement).checked as any;
@@ -127,10 +138,14 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     if (!formData.name) return alert("O nome completo é obrigatório.");
     if (formData.useSocialName && !formData.socialName) return alert("O nome social é obrigatório.");
     if (formData.birthDate.length < 10) return alert("Insira uma data de nascimento válida.");
+    if (!formData.responsibleName) return alert("O nome do responsável é obrigatório.");
+    if (!formData.relationship) return alert("O parentesco é obrigatório.");
+    if (!formData.contactPhone) return alert("O telefone de contato do responsável é obrigatório.");
     
     const studentData = {
       ...formData,
       classroom: generateClassName() || formData.classroom,
+      app_classroom: formData.classroom, // Store the original Turma
       name: formData.name,
       age: age || 0,
       profileImage: photoPreview || `https://i.pravatar.cc/150?u=${formData.name}`
@@ -362,6 +377,60 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
               </div>
             </div>
           )}
+        </section>
+
+        <section className="space-y-4 p-5 bg-indigo-50/30 rounded-3xl border border-indigo-100">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-sm">
+              <i className="fas fa-user-friends text-sm"></i>
+            </div>
+            <h3 className="text-xs font-bold text-slate-500 tracking-wider">Dados do Responsável</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Nome do Responsável *</label>
+              <input type="text" name="responsibleName" value={formData.responsibleName} onChange={handleInputChange} placeholder="Nome completo do tutor legal" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Parentesco *</label>
+                <select name="relationship" value={formData.relationship} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required>
+                  <option value="">Selecione</option>
+                  {kinship.map(k => <option key={k.id} value={k.value}>{k.value}</option>)}
+                </select>
+              </div>
+              {formData.relationship === 'Outro' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Especifique</label>
+                  <input type="text" name="otherRelationship" value={formData.otherRelationship} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Celular (WhatsApp) *</label>
+                <input type="text" name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">E-mail</label>
+                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Telefone Recados</label>
+                <input type="text" name="backupPhone" value={formData.backupPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Telefone Fixo</label>
+                <input type="text" name="landline" value={formData.landline} onChange={handleInputChange} placeholder="(99) 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+              </div>
+            </div>
+          </div>
         </section>
 
         <div>

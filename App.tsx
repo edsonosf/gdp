@@ -470,8 +470,8 @@ const App: React.FC = () => {
   }, [users]);
 
   const filteredStudents = sgeExtractedData.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.grade.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (s.grade?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const renderContent = () => {
@@ -593,7 +593,7 @@ const App: React.FC = () => {
       case 'FORMALIZATION':
         return selectedStudent ? <Formalization student={selectedStudent} onBack={() => setView('PENDING_OCCURRENCES')} /> : null;
       case 'ADD_STUDENT':
-        return <StudentRegistrationForm students={sgeExtractedData} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} workShifts={workShifts} genders={genders} />;
+        return <StudentRegistrationForm students={sgeExtractedData} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterStudent} kinship={kinship} workShifts={workShifts} genders={genders} />;
       case 'ADD_RESPONSIBLE':
         return <ResponsibleRegistrationForm students={sgeExtractedData} onBack={() => setView('STUDENT_LIST')} onRegister={handleRegisterResponsible} kinship={kinship} workShifts={workShifts} />;
       case 'EDIT_STUDENT':

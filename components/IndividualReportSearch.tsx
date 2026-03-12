@@ -14,8 +14,8 @@ const IndividualReportSearch: React.FC<IndividualReportSearchProps> = ({ student
   const [generating, setGenerating] = useState(false);
 
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.grade.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (s.grade?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const handleSelect = (student: Student) => {

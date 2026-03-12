@@ -620,6 +620,23 @@ async function startServer() {
     }
   });
 
+  app.get("/api/responsibles", async (req, res) => {
+    const { search } = req.query;
+    try {
+      let queryStr = "SELECT id, resp_name as name FROM legal_responsible";
+      const params: any[] = [];
+      if (search) {
+        queryStr += " WHERE resp_name ILIKE $1";
+        params.push(`%${search}%`);
+      }
+      queryStr += " ORDER BY resp_name ASC LIMIT 20";
+      const result = await query(queryStr, params);
+      res.json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
   app.get("/api/students/active-list", async (req, res) => {
     const { search } = req.query;
     try {
@@ -736,7 +753,7 @@ async function startServer() {
           e.sge_student_registration as matricula,
           e.app_signed_form as "signedForm",
           e.app_legal_consent as "legalConsent",
-          COALESCE(cmo.max_severity, 0) as "monthSeverity",
+          COALESCE(cmo.max_severity, 0) as month_severity,
           r.resp_name as "responsibleName", 
           r.resp_relationship as relationship, 
           r.resp_other_relationship as "otherRelationship", 
@@ -796,7 +813,8 @@ async function startServer() {
         matricula: s.matricula,
         signedForm: s.signedForm,
         legalConsent: s.legalConsent,
-        monthSeverity: s.monthSeverity,
+        monthSeverity: s.month_severity,
+        pcdInfo: s.pcdInfo,
         responsibleName: s.responsibleName,
         relationship: s.relationship,
         otherRelationship: s.otherRelationship,
@@ -815,26 +833,32 @@ async function startServer() {
 
   app.post("/api/students", async (req, res) => {
     const s = req.body;
+    console.log("Registering student:", s.name);
     try {
       await query("BEGIN");
       
-      // 1. Insert Responsible
-      const respId = crypto.randomUUID();
-      await query(
-        "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-        [respId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
-      );
+      // 1. Insert Responsible (only if name is provided)
+      let respId = null;
+      if (s.responsibleName) {
+        respId = crypto.randomUUID();
+        await query(
+          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+          [respId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
+        );
+      }
 
       // 2. Insert into sge_extracted_data
       await query(
         "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status, app_responsible_id, app_observations, app_is_aee, app_pcd_status, app_cid, app_investigation_description, app_school_need, app_pedagogical_evaluation_type, app_grade, app_classroom, app_room, app_turn, app_manual_insert, app_signed_form, app_legal_consent, app_gender) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)",
-        [s.id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status || 'Ativo', respId, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert || false, s.signedForm || false, s.legalConsent || false, s.gender]
+        [s.id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status || 'Ativo', respId, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.app_classroom || s.classroom, s.room, s.turn, s.manualInsert || false, s.signedForm || false, s.legalConsent || false, s.gender]
       );
       
       await query("COMMIT");
+      console.log("Student registered successfully:", s.name);
       res.status(201).json({ success: true });
     } catch (err) {
       await query("ROLLBACK");
+      console.error("Error registering student:", err);
       res.status(500).json({ error: (err as Error).message });
     }
   });

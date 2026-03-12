@@ -29,8 +29,8 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
   }, []);
 
   const filteredLogs = logs.filter(log => 
-    log.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (log.event?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (log.user_id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (log.description && log.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 

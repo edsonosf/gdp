@@ -13,9 +13,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onToggleStatus, 
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.secretaria.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    (user.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+    (user.secretaria?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (user.role?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
