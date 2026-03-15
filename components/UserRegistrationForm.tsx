@@ -316,7 +316,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
                 required 
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
-                <i className="fab fa-whatsapp text-lg"></i>
+                <i className="fab fa-whatsapp text-sm"></i>
               </div>
             </div>
           </div>

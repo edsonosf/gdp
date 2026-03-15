@@ -32,7 +32,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [linkedStudentIds, setLinkedStudentIds] = useState<string[]>([]);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,31 +128,31 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
             </button>
           </div>
           <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/*" />
-          <p className="text-[10px] text-slate-400 font-bold tracking-widest">Foto do perfil</p>
+          <p className="text-[10px] text-slate-400 font-bold">Foto do perfil</p>
         </section>
 
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Responsável pelo aluno *</label>
+            <label className="block text-sm font-bold text-slate-500 mb-1">Responsável pelo aluno *</label>
             <input 
               type="text" 
               name="name" 
               value={formData.name} 
               onChange={handleInputChange} 
               placeholder="Nome do tutor legal" 
-              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
               required 
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Grau de parentesco *</label>
+            <label className="block text-sm font-bold text-slate-500 mb-1">Grau de parentesco *</label>
             <select 
               name="relationship" 
               value={formData.relationship} 
               onChange={handleInputChange} 
-              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all appearance-none"
+              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all appearance-none"
               required
             >
               <option value="">Selecione o vínculo</option>
@@ -162,7 +162,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Celular de contato *</label>
+              <label className="block text-sm font-bold text-slate-500 mb-1">Celular *</label>
               <div className="relative">
                 <input 
                   type="text" 
@@ -170,88 +170,84 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                   value={formData.contactPhone} 
                   onChange={handleInputChange} 
                   placeholder="(99) 9 9999-9999" 
-                  className="w-full p-3 pr-12 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+                  className="w-full p-3 pr-12 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
                   required 
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500">
-                  <i className="fab fa-whatsapp text-lg"></i>
+                  <i className="fab fa-whatsapp text-sm"></i>
                 </div>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Recados</label>
+              <label className="block text-sm font-bold text-slate-500 mb-1">Recados</label>
               <input 
                 type="text" 
                 name="backupPhone" 
                 value={formData.backupPhone} 
                 onChange={handleInputChange} 
                 placeholder="(99) 9 9999-9999" 
-                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Telefone fixo</label>
+              <label className="block text-sm font-bold text-slate-500 mb-1">Telefone fixo</label>
               <input 
                 type="text" 
                 name="landline" 
                 value={formData.landline} 
                 onChange={handleInputChange} 
                 placeholder="(99) 9999-9999" 
-                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">Trabalho</label>
+              <label className="block text-sm font-bold text-slate-500 mb-1">Trabalho</label>
               <input 
                 type="text" 
                 name="workPhone" 
                 value={formData.workPhone} 
                 onChange={handleInputChange} 
                 placeholder="(99) 9999-9999" 
-                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+                className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1 tracking-wider">E-mail</label>
+            <label className="block text-sm font-bold text-slate-500 mb-1">E-mail</label>
             <input 
               type="email" 
               name="email" 
               value={formData.email} 
               onChange={handleInputChange} 
               placeholder="exemplo@email.com" 
-              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium transition-all" 
+              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
             />
           </div>
         </div>
 
         {/* Link Students Section */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-sm font-bold text-slate-700">Vincular Aluno(s)</h3>
-            <button type="button" onClick={() => setIsSearching(!isSearching)} className="text-slate-700 hover:text-indigo-600 transition-colors">
-              <i className="fas fa-search text-base"></i>
-            </button>
-          </div>
-
-          {(isSearching || true) && (
-            <div className="bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100 space-y-5 animate-fade-in shadow-sm">
-              <div>
-                <label className="block text-sm font-bold text-slate-600 mb-2">Nome Completo *</label>
-                <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100">
-                  <input 
-                    type="text" 
-                    value={studentSearchTerm} 
-                    onChange={(e) => setStudentSearchTerm(e.target.value)}
-                    placeholder="Nome completo do aluno" 
-                    className="w-full bg-transparent outline-none font-bold text-indigo-700 placeholder:text-indigo-300 text-sm" 
-                  />
-                </div>
+          <div className="bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100 space-y-5 animate-fade-in shadow-sm">
+            <div>
+              <label className="block text-sm font-bold text-slate-600 mb-2">Vincular Aluno(s)</label>
+              <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 flex items-center space-x-3">
+                <i className="fas fa-search text-indigo-300"></i>
+                <input 
+                  type="text" 
+                  value={studentSearchTerm} 
+                  onChange={(e) => {
+                    setStudentSearchTerm(e.target.value);
+                    if (!searchPerformed) setSearchPerformed(true);
+                  }}
+                  placeholder=" | Nome | Ano | Truma |" 
+                  className="w-full bg-transparent outline-none font-bold text-indigo-700 placeholder:text-indigo-300 text-xs uppercase" 
+                />
               </div>
+            </div>
 
 
               {/* Search Results */}
@@ -275,11 +271,10 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                 </div>
               )}
             </div>
-          )}
 
           {/* Linked Students List */}
           <div className="space-y-4 pt-2">
-            <h4 className="text-sm font-bold text-indigo-700">Aluno(s) Vinculados</h4>
+            {searchPerformed && <h4 className="text-sm font-bold text-indigo-700">Aluno(s) Vinculados</h4>}
             {linkedStudents.length > 0 ? (
               linkedStudents.map(s => (
                 <div key={s.id} className="bg-indigo-50/30 p-4 rounded-3xl border-2 border-red-400/50 shadow-sm flex items-center space-x-4 relative">

@@ -678,7 +678,7 @@ async function startServer() {
 
       queryStr += ` ORDER BY 
         CASE WHEN e.sge_class_name LIKE '%${currentYear}%' THEN 0 ELSE 1 END,
-        month_severity DESC, 
+        COALESCE(cmo.max_severity, 0) DESC, 
         random() 
         LIMIT 40`;
       
@@ -780,7 +780,7 @@ async function startServer() {
       if (mode === 'list') {
         queryStr += ` ORDER BY 
           CASE WHEN e.sge_class_name LIKE '%${currentYear}%' THEN 0 ELSE 1 END,
-          month_severity DESC, 
+          COALESCE(cmo.max_severity, 0) DESC, 
           random() 
           LIMIT 40`;
       } else {
@@ -837,9 +837,9 @@ async function startServer() {
     try {
       await query("BEGIN");
       
-      // 1. Insert Responsible (only if name is provided)
-      let respId = null;
-      if (s.responsibleName) {
+      // 1. Handle Responsible
+      let respId = s.responsibleId || null;
+      if (!respId && s.responsibleName) {
         respId = crypto.randomUUID();
         await query(
           "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
@@ -897,22 +897,28 @@ async function startServer() {
     try {
       await query("BEGIN");
       
-      // Get responsible ID
-      const student = await query("SELECT app_responsible_id FROM sge_extracted_data WHERE id = $1", [id]);
-      const respId = student.rows[0]?.app_responsible_id;
-
-      if (respId) {
-        // Update Responsible
+      // Handle Responsible update/link
+      let finalRespId = s.responsibleId;
+      
+      if (!finalRespId && s.responsibleName) {
+        // Create new responsible if name provided but no ID
+        finalRespId = crypto.randomUUID();
+        await query(
+          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+          [finalRespId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
+        );
+      } else if (finalRespId) {
+        // Update existing responsible if needed
         await query(
           "UPDATE legal_responsible SET resp_name=$1, resp_relationship=$2, resp_other_relationship=$3, resp_contact_phone=$4, resp_backup_phone=$5, resp_landline=$6, resp_work_phone=$7, resp_email=$8 WHERE id=$9",
-          [s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email, respId]
+          [s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email, finalRespId]
         );
       }
 
       // Update sge_extracted_data
       await query(
-        "UPDATE sge_extracted_data SET sge_photo=$1, sge_civil_name=$2, sge_social_name=$3, sge_transgender=$4, sge_cpf=$5, sge_class_name=$6, sge_student_registration=$7, sge_birthday=$8, sge_pcd_info=$9, sge_school_academic_year=$10, sge_status=$11, app_observations=$12, app_is_aee=$13, app_pcd_status=$14, app_cid=$15, app_investigation_description=$16, app_school_need=$17, app_pedagogical_evaluation_type=$18, app_grade=$19, app_classroom=$20, app_room=$21, app_turn=$22, app_manual_insert=$23, app_signed_form=$24, app_legal_consent=$25, app_gender=$26 WHERE id=$27",
-        [s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert, s.signedForm || false, s.legalConsent || false, s.gender, id]
+        "UPDATE sge_extracted_data SET sge_photo=$1, sge_civil_name=$2, sge_social_name=$3, sge_transgender=$4, sge_cpf=$5, sge_class_name=$6, sge_student_registration=$7, sge_birthday=$8, sge_pcd_info=$9, sge_school_academic_year=$10, sge_status=$11, app_observations=$12, app_is_aee=$13, app_pcd_status=$14, app_cid=$15, app_investigation_description=$16, app_school_need=$17, app_pedagogical_evaluation_type=$18, app_grade=$19, app_classroom=$20, app_room=$21, app_turn=$22, app_manual_insert=$23, app_signed_form=$24, app_legal_consent=$25, app_gender=$26, app_responsible_id=$27 WHERE id=$28",
+        [s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert, s.signedForm || false, s.legalConsent || false, s.gender, finalRespId, id]
       );
       
       await query("COMMIT");

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Student, Option } from '../types';
+import { Student, Option, LegalResponsible } from '../types';
 import { GRADE_OPTIONS } from '../constants';
 import { calculateAge } from '../utils';
 
@@ -54,6 +54,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     pedagogicalEvaluationType: initialData?.pedagogicalEvaluationType || '',
     observations: initialData?.observations || '',
     // Responsible fields
+    responsibleId: initialData?.responsibleId || '',
     responsibleName: initialData?.responsibleName || '',
     relationship: initialData?.relationship || '',
     otherRelationship: initialData?.otherRelationship || '',
@@ -63,6 +64,11 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
     workPhone: initialData?.workPhone || '',
     email: initialData?.email || ''
   });
+
+  const [responsibleSearchTerm, setResponsibleSearchTerm] = useState('');
+  const [foundResponsibles, setFoundResponsibles] = useState<LegalResponsible[]>([]);
+  const [isSearchingResponsible, setIsSearchingResponsible] = useState(false);
+  const [showResponsibleResults, setShowResponsibleResults] = useState(false);
 
   const [age, setAge] = useState<number | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.profileImage || null);
@@ -104,6 +110,44 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
       setAge(null);
     }
   }, [formData.birthDate]);
+
+  useEffect(() => {
+    const searchResponsibles = async () => {
+      if (responsibleSearchTerm.length < 2) {
+        setFoundResponsibles([]);
+        return;
+      }
+
+      setIsSearchingResponsible(true);
+      try {
+        const response = await fetch(`/api/responsibles?search=${encodeURIComponent(responsibleSearchTerm)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFoundResponsibles(data);
+        }
+      } catch (error) {
+        console.error('Error searching responsibles:', error);
+      } finally {
+        setIsSearchingResponsible(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchResponsibles, 300);
+    return () => clearTimeout(timeoutId);
+  }, [responsibleSearchTerm]);
+
+  const selectResponsible = (resp: LegalResponsible) => {
+    setFormData(prev => ({
+      ...prev,
+      responsibleId: resp.id,
+      responsibleName: resp.name,
+      relationship: resp.relationship || '',
+      contactPhone: resp.contactPhone || '',
+      email: resp.email || ''
+    }));
+    setResponsibleSearchTerm('');
+    setShowResponsibleResults(false);
+  };
 
   const generateClassName = () => {
     const { grade, classroom, turn } = formData;
@@ -203,7 +247,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 name={formData.useSocialName ? "socialName" : "name"} 
                 value={formData.useSocialName ? formData.socialName : formData.name} 
                 onChange={handleInputChange} 
-                className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" 
+                className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium" 
                 required 
                 placeholder={formData.useSocialName ? "Como deseja ser chamado" : "Nome civil completo"}
               />
@@ -213,14 +257,14 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
         <section className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Identidade de gênero</label>
-            <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
+            <select name="gender" value={formData.gender} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium">
               <option value=""></option>
               {genders.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">CPF</label>
-            <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+            <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium" />
           </div>
         </section>
 
@@ -231,12 +275,12 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
               {age !== null && <span className="text-xs font-bold text-blue-500">( {age} Anos )</span>}
             </div>
             <div className="flex flex-col space-y-1">
-              <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+              <input type="text" name="birthDate" value={formData.birthDate} onChange={handleInputChange} placeholder="DD/MM/AAAA" className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium" required />
             </div>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Matrícula</label>
-            <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+            <input type="text" name="matricula" value={formData.matricula} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium" />
           </div>
         </section>
 
@@ -252,24 +296,24 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Ano *</label>
-              <select name="grade" value={formData.grade} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required>
+              <select name="grade" value={formData.grade} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-medium" required>
                 <option value="">Selecione</option>
                 {GRADE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Turma *</label>
-              <input type="text" name="classroom" value={formData.classroom} onChange={handleInputChange} placeholder="A" maxLength={5} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" required />
+              <input type="text" name="classroom" value={formData.classroom} onChange={handleInputChange} placeholder="A" maxLength={5} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-[11px] font-medium" required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Sala</label>
-              <input type="text" name="room" value={formData.room} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" />
+              <input type="text" name="room" value={formData.room} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-[11px] font-medium" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Turno *</label>
-              <select name="turn" value={formData.turn} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-sm font-medium" required>
+              <select name="turn" value={formData.turn} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white text-[11px] font-medium" required>
                 <option value=""></option>
                 {workShifts.map(o => <option key={o.id} value={o.value}>{o.value}</option>)}
               </select>
@@ -280,7 +324,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
         <section className="space-y-4 p-5 bg-blue-50/50 rounded-3xl border border-blue-100">
           <div className="flex items-center space-x-2 mb-2">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-sm">
-              <i className="fas fa-universal-access text-sm"></i>
+              <i className="fas fa-universal-access text-[11px]"></i>
             </div>
             <h3 className="text-xs font-bold text-slate-500 tracking-wider">Aluno PcD (Pessoa com Deficiência)</h3>
           </div>
@@ -308,14 +352,14 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                 {formData.pcdStatus === 'com_laudo' && (
                   <div className="animate-fade-in pt-2">
                     <label className="text-xs font-bold text-blue-800 mb-1 ml-1">CID</label>
-                    <textarea name="cid" value={formData.cid} onChange={handleInputChange} rows={3} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
+                    <textarea name="cid" value={formData.cid} onChange={handleInputChange} rows={3} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-[11px] font-medium resize-none"></textarea>
                   </div>
                 )}
 
                 {formData.pcdStatus === 'sob_investigacao' && (
                   <div className="animate-fade-in pt-2">
                     <label className="block text-xs font-bold text-blue-800 mb-1 ml-1">Situação Atual do Aluno</label>
-                    <textarea name="investigationDescription" value={formData.investigationDescription} onChange={handleInputChange} rows={5} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
+                    <textarea name="investigationDescription" value={formData.investigationDescription} onChange={handleInputChange} rows={5} className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-[11px] font-medium resize-none"></textarea>
                   </div>
                 )}
               </div>
@@ -373,7 +417,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
 
               <div className="animate-fade-in">
                 <label className="block text-xs font-bold text-blue-800 mb-1 ml-1">Tipo de Avaliação Pedagógica</label>
-                <textarea name="pedagogicalEvaluationType" value={formData.pedagogicalEvaluationType} onChange={handleInputChange} rows={4} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium resize-none"></textarea>
+                <textarea name="pedagogicalEvaluationType" value={formData.pedagogicalEvaluationType} onChange={handleInputChange} rows={4} className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none text-[11px] font-medium resize-none"></textarea>
               </div>
             </div>
           )}
@@ -382,60 +426,94 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
         <section className="space-y-4 p-5 bg-indigo-50/30 rounded-3xl border border-indigo-100">
           <div className="flex items-center space-x-2 mb-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-sm">
-              <i className="fas fa-user-friends text-sm"></i>
+              <i className="fas fa-user-friends text-[11px]"></i>
             </div>
-            <h3 className="text-xs font-bold text-slate-500 tracking-wider">Dados do Responsável</h3>
+            <h3 className="text-xs font-bold text-slate-500">Responsável</h3>
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Nome do Responsável *</label>
-              <input type="text" name="responsibleName" value={formData.responsibleName} onChange={handleInputChange} placeholder="Nome completo do tutor legal" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Parentesco *</label>
-                <select name="relationship" value={formData.relationship} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required>
-                  <option value="">Selecione</option>
-                  {kinship.map(k => <option key={k.id} value={k.value}>{k.value}</option>)}
-                </select>
+            <div className="relative">
+              <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-4 focus-within:ring-2 focus-within:ring-indigo-500 transition-all shadow-sm">
+                <i className="fas fa-search text-slate-400 mr-3"></i>
+                <input 
+                  type="text" 
+                  value={responsibleSearchTerm || formData.responsibleName} 
+                  onChange={(e) => {
+                    setResponsibleSearchTerm(e.target.value);
+                    setShowResponsibleResults(true);
+                    if (!e.target.value && formData.responsibleName) {
+                      setFormData(prev => ({ ...prev, responsibleName: '', responsibleId: '' }));
+                    }
+                  }} 
+                  className="w-full bg-transparent outline-none text-[11px] font-medium placeholder:text-slate-400 uppercase"  
+                  placeholder="Nome | Celular | Email" 
+                  onFocus={() => setShowResponsibleResults(true)}
+                />
+                {isSearchingResponsible && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-indigo-500 border-t-transparent ml-2"></div>
+                )}
               </div>
-              {formData.relationship === 'Outro' && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Especifique</label>
-                  <input type="text" name="otherRelationship" value={formData.otherRelationship} onChange={handleInputChange} className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
+
+              {/* Search Results Dropdown */}
+              {showResponsibleResults && (responsibleSearchTerm.length >= 2 || foundResponsibles.length > 0) && (
+                <div className="absolute z-50 left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                  {foundResponsibles.length > 0 ? (
+                    <div className="p-2 space-y-1">
+                      {foundResponsibles.map(resp => (
+                        <button
+                          key={resp.id}
+                          type="button"
+                          onClick={() => selectResponsible(resp)}
+                          className="w-full flex items-center p-3 hover:bg-indigo-50 rounded-xl transition-colors text-left group"
+                        >
+                          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mr-3 group-hover:bg-indigo-100">
+                            <i className="fas fa-user text-slate-400 group-hover:text-indigo-500 text-[10px]"></i>
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-700">{resp.name}</div>
+                            <div className="text-[9px] text-slate-500 flex items-center space-x-2">
+                              {resp.contactPhone && <span><i className="fas fa-phone-alt mr-1"></i>{resp.contactPhone}</span>}
+                              {resp.email && <span><i className="fas fa-envelope mr-1"></i>{resp.email}</span>}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : !isSearchingResponsible && responsibleSearchTerm.length >= 2 ? (
+                    <div className="p-4 text-center text-slate-500 text-[11px]">
+                      Nenhum responsável encontrado.
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Celular (WhatsApp) *</label>
-                <input type="text" name="contactPhone" value={formData.contactPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" required />
+            {formData.responsibleName && (
+              <div className="bg-white border border-indigo-100 rounded-2xl p-4 flex items-center justify-between animate-in zoom-in-95 duration-200">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                    <i className="fas fa-check text-indigo-600 text-[10px]"></i>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Responsável Selecionado</div>
+                    <div className="text-[12px] font-bold text-slate-800">{formData.responsibleName}</div>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, responsibleName: '', responsibleId: '' }))}
+                  className="text-slate-400 hover:text-red-500 p-2 transition-colors"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">E-mail</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="exemplo@email.com" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Telefone Recados</label>
-                <input type="text" name="backupPhone" value={formData.backupPhone} onChange={handleInputChange} placeholder="(99) 9 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Telefone Fixo</label>
-                <input type="text" name="landline" value={formData.landline} onChange={handleInputChange} placeholder="(99) 9999-9999" className="w-full p-4 border border-slate-200 rounded-2xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium" />
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
         <div>
           <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">Observações importantes</label>
-          <textarea name="observations" value={formData.observations} onChange={handleInputChange} placeholder="Informações médicas, comportamentais..." className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none text-sm font-medium"></textarea>
+          <textarea name="observations" value={formData.observations} onChange={handleInputChange} placeholder="Informações médicas, comportamentais..." className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none text-[11px] font-medium"></textarea>
         </div>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -452,12 +530,12 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
             <button 
               type="button" 
               onClick={() => onDelete(initialData.id, initialData.name)}
-              className="flex-1 bg-red-50 text-red-600 py-5 rounded-2xl font-bold border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider"
+              className="flex-1 bg-red-50 text-red-600 py-5 rounded-2xl font-bold border border-red-100 active:scale-[0.98] transition-all flex items-center justify-center text-[11px] tracking-wider"
             >
               <i className="fas fa-trash-alt mr-3"></i> Excluir
             </button>
           )}
-          <button type="submit" className="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center text-sm tracking-wider">
+          <button type="submit" className="flex-[2] bg-indigo-600 text-white py-5 rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all flex items-center justify-center text-[11px] tracking-wider">
             <i className="fas fa-check-circle mr-3"></i> Finalizar Cadastro
           </button>
         </div>
