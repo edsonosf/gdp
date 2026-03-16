@@ -625,7 +625,7 @@ async function startServer() {
       await query("BEGIN");
       const respId = crypto.randomUUID();
       await query(
-        "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email, resp_observations, resp_profile_image, resp_legal_consent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+        "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email, resp_observations, resp_profile_image, resp_legal_consent) VALUES ($1, UPPER($2), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
         [respId, r.name, r.relationship, r.otherRelationship, r.contactPhone, r.backupPhone, r.landline, r.workPhone, r.email, r.observations, r.profileImage, r.legalConsent]
       );
 
@@ -866,14 +866,14 @@ async function startServer() {
       if (!respId && s.responsibleName) {
         respId = crypto.randomUUID();
         await query(
-          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, UPPER($2), $3, $4, $5, $6, $7, $8, $9)",
           [respId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
         );
       }
 
       // 2. Insert into sge_extracted_data
       await query(
-        "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status, app_responsible_id, app_observations, app_is_aee, app_pcd_status, app_cid, app_investigation_description, app_school_need, app_pedagogical_evaluation_type, app_grade, app_classroom, app_room, app_turn, app_manual_insert, app_signed_form, app_legal_consent, app_gender) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)",
+        "INSERT INTO sge_extracted_data (id, sge_photo, sge_civil_name, sge_social_name, sge_transgender, sge_cpf, sge_class_name, sge_student_registration, sge_birthday, sge_pcd_info, sge_school_academic_year, sge_status, app_responsible_id, app_observations, app_is_aee, app_pcd_status, app_cid, app_investigation_description, app_school_need, app_pedagogical_evaluation_type, app_grade, app_classroom, app_room, app_turn, app_manual_insert, app_signed_form, app_legal_consent, app_gender) VALUES ($1, $2, UPPER($3), UPPER($4), $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)",
         [s.id, s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status || 'Ativo', respId, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.app_classroom || s.classroom, s.room, s.turn, s.manualInsert || false, s.signedForm || false, s.legalConsent || false, s.gender]
       );
       
@@ -930,20 +930,20 @@ async function startServer() {
         // Create new responsible if name provided but no ID
         finalRespId = crypto.randomUUID();
         await query(
-          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+          "INSERT INTO legal_responsible (id, resp_name, resp_relationship, resp_other_relationship, resp_contact_phone, resp_backup_phone, resp_landline, resp_work_phone, resp_email) VALUES ($1, UPPER($2), $3, $4, $5, $6, $7, $8, $9)",
           [finalRespId, s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email]
         );
       } else if (finalRespId) {
         // Update existing responsible if needed
         await query(
-          "UPDATE legal_responsible SET resp_name=$1, resp_relationship=$2, resp_other_relationship=$3, resp_contact_phone=$4, resp_backup_phone=$5, resp_landline=$6, resp_work_phone=$7, resp_email=$8 WHERE id=$9",
+          "UPDATE legal_responsible SET resp_name=UPPER($1), resp_relationship=$2, resp_other_relationship=$3, resp_contact_phone=$4, resp_backup_phone=$5, resp_landline=$6, resp_work_phone=$7, resp_email=$8 WHERE id=$9",
           [s.responsibleName, s.relationship, s.otherRelationship, s.contactPhone, s.backupPhone, s.landline, s.workPhone, s.email, finalRespId]
         );
       }
 
       // Update sge_extracted_data
       await query(
-        "UPDATE sge_extracted_data SET sge_photo=$1, sge_civil_name=$2, sge_social_name=$3, sge_transgender=$4, sge_cpf=$5, sge_class_name=$6, sge_student_registration=$7, sge_birthday=$8, sge_pcd_info=$9, sge_school_academic_year=$10, sge_status=$11, app_observations=$12, app_is_aee=$13, app_pcd_status=$14, app_cid=$15, app_investigation_description=$16, app_school_need=$17, app_pedagogical_evaluation_type=$18, app_grade=$19, app_classroom=$20, app_room=$21, app_turn=$22, app_manual_insert=$23, app_signed_form=$24, app_legal_consent=$25, app_gender=$26, app_responsible_id=$27 WHERE id=$28",
+        "UPDATE sge_extracted_data SET sge_photo=$1, sge_civil_name=UPPER($2), sge_social_name=UPPER($3), sge_transgender=$4, sge_cpf=$5, sge_class_name=$6, sge_student_registration=$7, sge_birthday=$8, sge_pcd_info=$9, sge_school_academic_year=$10, sge_status=$11, app_observations=$12, app_is_aee=$13, app_pcd_status=$14, app_cid=$15, app_investigation_description=$16, app_school_need=$17, app_pedagogical_evaluation_type=$18, app_grade=$19, app_classroom=$20, app_room=$21, app_turn=$22, app_manual_insert=$23, app_signed_form=$24, app_legal_consent=$25, app_gender=$26, app_responsible_id=$27 WHERE id=$28",
         [s.profileImage, s.name, s.socialName, s.useSocialName || false, s.cpf, s.classroom, s.matricula, s.birthDate, s.cid, s.schoolAcademicYear, s.status, s.observations, s.isAEE || false, s.pcdStatus, s.cid, s.investigationDescription, s.schoolNeed, s.pedagogicalEvaluationType, s.grade, s.classroom, s.room, s.turn, s.manualInsert, s.signedForm || false, s.legalConsent || false, s.gender, finalRespId, id]
       );
       
@@ -1064,6 +1064,7 @@ async function startServer() {
         ORDER BY l.acc_timestamp DESC 
         LIMIT 200
       `);
+      console.log(`Fetched ${result.rows.length} logs`);
       res.json(result.rows.map(l => ({
         timestamp: l.acc_timestamp,
         user_id: l.acc_user_id,

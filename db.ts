@@ -422,7 +422,6 @@ export async function initDb() {
   
   console.log('Seed: Administrator user synchronized');
 
-  await seedSeverityAndOccurrences();
   await seedOptions();
 
   // Seed students from user request if table is empty
@@ -436,60 +435,6 @@ export async function initDb() {
   }
 
   console.log('Database initialized');
-}
-
-async function seedSeverityAndOccurrences() {
-  const check = await query("SELECT id FROM severity_categories LIMIT 1");
-  if (check.rows.length > 0) return;
-
-  console.log('Seeding severity categories and occurrence types...');
-
-  const categories = [
-    { level: 'Baixa Gravidade', description: 'Itens de Baixa Gravidade' },
-    { level: 'Média Gravidade', description: 'Itens de Média Gravidade' },
-    { level: 'Alta Gravidade', description: 'Itens de Alta Gravidade' },
-    { level: 'Gravíssima', description: 'Itens de Gravidade Gravíssima' }
-  ];
-
-  const types: Record<string, string[]> = {
-    'Baixa Gravidade': [
-      'Apresentar de forma recorrente esquecimento do material escolar.',
-      'Falta de material escolar (livros didáticos) durante as atividades.',
-      'Dormir durante a aula.',
-      'Uso inadequado do uniforme escolar.'
-    ],
-    'Média Gravidade': [
-      'Atrasos recorrentes à escola.',
-      'Saída da sala de aula sem autorização.',
-      'Conversas excessivas/paralelas ou interrupções constantes.'
-    ],
-    'Alta Gravidade': [
-      'Desrespeito a colegas ou funcionários.',
-      'Uso de palavrões ou gestos obscenos.',
-      'Danos ao patrimônio escolar.'
-    ],
-    'Crítica': [
-      'Agressão física.',
-      'Porte de objetos perigosos.',
-      'Uso de substâncias ilícitas.'
-    ]
-  };
-
-  for (const cat of categories) {
-    const res = await query(
-      "INSERT INTO severity_categories (level, description_level) VALUES ($1, $2) RETURNING id",
-      [cat.level, cat.description]
-    );
-    const catId = res.rows[0].id;
-
-    for (const typeDesc of types[cat.level] || []) {
-      await query(
-        "INSERT INTO occurrence_types (category_id, occurrence_description) VALUES ($1, $2)",
-        [catId, typeDesc]
-      );
-    }
-  }
-  console.log('Seed: Severity categories and occurrence types synchronized');
 }
 
 async function seedOptions() {

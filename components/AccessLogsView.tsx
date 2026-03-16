@@ -36,7 +36,7 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
   const filteredLogs = logs.filter(log => 
     (log.event?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (log.user_id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (log.description && log.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    (log.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const handleClearLogs = async () => {
@@ -55,11 +55,12 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
   };
 
   const getEventIcon = (event: string) => {
-    if (event.includes('user')) return 'fa-user-cog';
-    if (event.includes('student')) return 'fa-user-graduate';
-    if (event.includes('occurrence')) return 'fa-exclamation-triangle';
-    if (event.includes('system')) return 'fa-server';
-    if (event.includes('sync')) return 'fa-sync-alt';
+    const evt = (event || '').toLowerCase();
+    if (evt.includes('user')) return 'fa-user-cog';
+    if (evt.includes('student')) return 'fa-user-graduate';
+    if (evt.includes('occurrence')) return 'fa-exclamation-triangle';
+    if (evt.includes('system')) return 'fa-server';
+    if (evt.includes('sync')) return 'fa-sync-alt';
     return 'fa-history';
   };
 
@@ -115,10 +116,10 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${
-                    log.event.includes('system') ? 'bg-indigo-50 text-indigo-600' :
-                    log.event.includes('user') ? 'bg-blue-50 text-blue-600' :
-                    log.event.includes('student') ? 'bg-emerald-50 text-emerald-600' :
-                    log.event.includes('occurrence') ? 'bg-amber-50 text-amber-600' :
+                    (log.event || '').includes('system') ? 'bg-indigo-50 text-indigo-600' :
+                    (log.event || '').includes('user') ? 'bg-blue-50 text-blue-600' :
+                    (log.event || '').includes('student') ? 'bg-emerald-50 text-emerald-600' :
+                    (log.event || '').includes('occurrence') ? 'bg-amber-50 text-amber-600' :
                     'bg-slate-50 text-slate-600'
                   }`}>
                     <i className={`fas ${getEventIcon(log.event)}`}></i>
@@ -140,8 +141,8 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
               </div>
 
               <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                <span>Data: {new Date(log.timestamp).toLocaleDateString('pt-BR')}</span>
-                <span>Hora: {new Date(log.timestamp).toLocaleTimeString('pt-BR')}</span>
+                <span>Data: {log.timestamp ? new Date(log.timestamp).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                <span>Hora: {log.timestamp ? new Date(log.timestamp).toLocaleTimeString('pt-BR') : 'N/A'}</span>
               </div>
 
               {log.description && (
