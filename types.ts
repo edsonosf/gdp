@@ -94,6 +94,7 @@ export interface User {
 export interface AccessLog {
   timestamp: string;
   user_id: string;
+  user_name?: string;
   event: string;
   status: 'success' | 'failure' | 'Sucesso' | 'Erro';
   ip_address: string;

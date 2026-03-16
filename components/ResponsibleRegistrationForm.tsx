@@ -134,14 +134,14 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-slate-500 mb-1">Responsável pelo aluno *</label>
+            <label className="block text-sm font-bold text-slate-500 mb-1">Nome *</label>
             <input 
               type="text" 
               name="name" 
               value={formData.name} 
               onChange={handleInputChange} 
-              placeholder="Nome do tutor legal" 
-              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
+              placeholder="Nome do resposável/tutor legal" 
+              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all uppercase" 
               required 
             />
           </div>
@@ -224,17 +224,17 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
               value={formData.email} 
               onChange={handleInputChange} 
               placeholder="exemplo@email.com" 
-              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all" 
+              className="w-full p-3 border border-slate-200 rounded-2xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-xs font-medium transition-all lowercase" 
             />
           </div>
         </div>
 
         {/* Link Students Section */}
         <div className="space-y-4">
-          <div className="bg-indigo-50/50 p-6 rounded-[2.5rem] border border-indigo-100 space-y-5 animate-fade-in shadow-sm">
+          <div className="p-6 rounded-xl border border-indigo-100 space-y-5 animate-fade-in shadow-sm">
             <div>
               <label className="block text-sm font-bold text-slate-600 mb-2">Vincular Aluno(s)</label>
-              <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 flex items-center space-x-3">
+              <div className="rounded-2xl p-4 border border-indigo-100 flex items-center space-x-3">
                 <i className="fas fa-search text-indigo-300"></i>
                 <input 
                   type="text" 
@@ -243,7 +243,7 @@ const ResponsibleRegistrationForm: React.FC<ResponsibleRegistrationFormProps> = 
                     setStudentSearchTerm(e.target.value);
                     if (!searchPerformed) setSearchPerformed(true);
                   }}
-                  placeholder=" | Nome | Ano | Truma |" 
+                  placeholder=" | Nome | Ano | Turma |" 
                   className="w-full bg-transparent outline-none font-bold text-indigo-700 placeholder:text-indigo-300 text-xs uppercase" 
                 />
               </div>

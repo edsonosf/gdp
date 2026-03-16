@@ -746,5 +746,14 @@ async function seedOptions() {
     await query("UPDATE local_unit SET loc_organization_chart_id = $1 WHERE loc_organization_chart_id IS NULL", [eduOrgId]);
   }
 
+  // Seed a system log
+  const logCheck = await query("SELECT id FROM access_logs LIMIT 1");
+  if (logCheck.rows.length === 0) {
+    await query(
+      "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description) VALUES ($1, $2, $3, $4, $5)",
+      [new Date().toISOString(), 'system', 'system.init', 'success', 'Sistema inicializado com sucesso.']
+    );
+  }
+
   console.log('Seed: System options synchronized');
 }

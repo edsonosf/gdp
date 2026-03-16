@@ -287,7 +287,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
                 </div>
             </div>
             <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Celular para recados</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Recados</label>
                 <input 
                   type="text" 
                   name="phone2" 
@@ -307,7 +307,7 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               name="email" 
               value={formData.email} 
               onChange={handleInputChange} 
-              className={`text-xs w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.email.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+              className={`text-xs lowercase w-full p-3 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.email.trim() !== '' ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
               placeholder="exemplo@email.com" 
             />
         </div>

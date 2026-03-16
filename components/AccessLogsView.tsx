@@ -9,6 +9,7 @@ interface AccessLogsViewProps {
 const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) => {
   const [logs, setLogs] = useState<AccessLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -18,9 +19,13 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
         if (res.ok) {
           const data = await res.json();
           setLogs(data);
+        } else {
+          const errData = await res.json();
+          setError(errData.error || "Erro ao carregar logs");
         }
       } catch (err) {
         console.error("Failed to fetch logs:", err);
+        setError("Erro de conexão ao carregar logs");
       } finally {
         setLoading(false);
       }
@@ -49,29 +54,26 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
     }
   };
 
+  const getEventIcon = (event: string) => {
+    if (event.includes('user')) return 'fa-user-cog';
+    if (event.includes('student')) return 'fa-user-graduate';
+    if (event.includes('occurrence')) return 'fa-exclamation-triangle';
+    if (event.includes('system')) return 'fa-server';
+    if (event.includes('sync')) return 'fa-sync-alt';
+    return 'fa-history';
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col animate-fade-in text-slate-700">
-      {/* Header */}
-      <header className="bg-white p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center space-x-4">
-          <button 
-            onClick={onBack}
-            className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"
-          >
-            <i className="fas fa-arrow-left"></i>
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-slate-800">Logs de Acesso</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Auditoria do Sistema</p>
-          </div>
-        </div>
+      {/* Header Actions */}
+      <div className="bg-white p-4 border-b border-slate-100 flex justify-center sticky top-0 z-10 shadow-sm">
         <button 
           onClick={handleClearLogs}
-          className="px-4 py-2 bg-red-50 text-red-600 text-[10px] font-black rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
+          className="px-6 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl hover:bg-red-700 transition-colors shadow-sm"
         >
           Limpar Histórico
         </button>
-      </header>
+      </div>
 
       {/* Search Bar */}
       <div className="p-4">
@@ -96,54 +98,54 @@ const AccessLogsView: React.FC<AccessLogsViewProps> = ({ onBack, currentUser }) 
             <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
             <p className="text-xs font-bold text-slate-400">Carregando logs...</p>
           </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-red-500">
+            <i className="fas fa-exclamation-circle text-6xl mb-4 opacity-20"></i>
+            <p className="text-sm font-bold">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-slate-200 text-slate-700 text-[10px] font-black rounded-xl"
+            >
+              Tentar Novamente
+            </button>
+          </div>
         ) : filteredLogs.length > 0 ? (
           filteredLogs.map((log, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4 animate-scale-in">
-              <div className="flex justify-between items-start">
+            <div key={idx} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-3 animate-scale-in">
+              <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${log.status === 'success' || log.status === 'Sucesso' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                    <i className={`fas ${log.event.includes('login') ? 'fa-sign-in-alt' : log.event.includes('logout') ? 'fa-sign-out-alt' : 'fa-bolt'}`}></i>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs ${
+                    log.event.includes('system') ? 'bg-indigo-50 text-indigo-600' :
+                    log.event.includes('user') ? 'bg-blue-50 text-blue-600' :
+                    log.event.includes('student') ? 'bg-emerald-50 text-emerald-600' :
+                    log.event.includes('occurrence') ? 'bg-amber-50 text-amber-600' :
+                    'bg-slate-50 text-slate-600'
+                  }`}>
+                    <i className={`fas ${getEventIcon(log.event)}`}></i>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-800">{log.event}</h3>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${log.status === 'success' || log.status === 'Sucesso' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                      {log.status}
-                    </span>
-                  </div>
+                  <h3 className="text-sm font-black text-slate-800">{log.event}</h3>
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono font-bold">
-                  {new Date(log.timestamp).toLocaleString('pt-BR')}
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${log.status === 'success' || log.status === 'Sucesso' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {log.status}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <span className="block text-[8px] font-black text-slate-400 uppercase mb-1">Usuário</span>
-                  <span className="text-xs font-bold text-slate-700 truncate block">{log.user_id}</span>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <span className="block text-[8px] font-black text-slate-400 uppercase mb-1">Endereço IP</span>
-                  <span className="text-xs font-mono font-bold text-slate-700">{log.ip_address}</span>
-                </div>
+              <div className="space-y-1">
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Usuário: <span className="text-slate-700 font-black">{log.user_name || log.user_id}</span>
+                </p>
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Endereço IP: <span className="text-slate-700 font-black">{log.ip_address}</span>
+                </p>
               </div>
 
-              {log.device_info && (
-                <div className="bg-indigo-50/30 p-3 rounded-2xl border border-indigo-50 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
-                      <i className={`fas ${log.device_info.type === 'mobile' ? 'fa-mobile-screen' : log.device_info.type === 'tablet' ? 'fa-tablet-screen' : 'fa-desktop'}`}></i>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black text-indigo-900 block">{log.device_info.type} • {log.device_info.os}</span>
-                      <span className="text-[9px] text-indigo-500 font-bold">{log.device_info.browser}</span>
-                    </div>
-                  </div>
-                  <i className="fas fa-info-circle text-indigo-200 text-xs"></i>
-                </div>
-              )}
+              <div className="pt-2 border-t border-slate-50 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                <span>Data: {new Date(log.timestamp).toLocaleDateString('pt-BR')}</span>
+                <span>Hora: {new Date(log.timestamp).toLocaleTimeString('pt-BR')}</span>
+              </div>
 
               {log.description && (
-                <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100 italic text-xs text-slate-600 leading-relaxed">
+                <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100 italic text-[10px] text-slate-600 leading-relaxed">
                   {log.description}
                 </div>
               )}

@@ -446,7 +446,7 @@ const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = ({
                     }
                   }} 
                   className="w-full bg-transparent outline-none text-[11px] font-medium placeholder:text-slate-400 uppercase"  
-                  placeholder="Nome | Celular | Email" 
+                  placeholder=" | Nome | Celular | Email |" 
                   onFocus={() => setShowResponsibleResults(true)}
                 />
                 {isSearchingResponsible && (

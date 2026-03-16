@@ -21,28 +21,49 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+  // Helper to record logs
+  const recordLog = async (userId: string | null, event: string, status: string, description: string, req?: express.Request) => {
+    try {
+      await query(
+        "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description, acc_ip_address, acc_user_agent, acc_device_info) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        [
+          new Date().toISOString(),
+          userId || 'system',
+          event,
+          status,
+          description,
+          req?.ip || '',
+          req?.headers['user-agent'] || '',
+          JSON.stringify({})
+        ]
+      );
+    } catch (err) {
+      console.error("Failed to record log:", err);
+    }
+  };
+
   // Initialize DB
   try {
     await initDb();
+    await recordLog(null, 'system.startup', 'success', 'Servidor iniciado e banco de dados conectado.');
   } catch (err) {
     console.error("Failed to initialize DB:", err);
   }
 
-  // API Routes
-  
   // Login Endpoint
   app.post("/api/login", async (req, res) => {
     const { usuario, password, deviceInfo } = req.body;
 
     const recordLoginLog = async (status: string, userId: string | null, description: string) => {
       await query(
-        "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description, acc_user_agent, acc_device_info) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO access_logs (acc_timestamp, acc_user_id, acc_event, acc_status, acc_description, acc_ip_address, acc_user_agent, acc_device_info) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         [
           new Date().toISOString(),
           userId || usuario || 'anonymous',
           'user.login',
           status,
           description,
+          req.ip || '',
           req.headers['user-agent'] || '',
           JSON.stringify(deviceInfo || {})
         ]
@@ -563,6 +584,7 @@ async function startServer() {
         "INSERT INTO users (id, usr_name, usr_social_name, usr_role, usr_email, usr_cpf, usr_password, usr_status, usr_secretaria, usr_lotacao, usr_matricula, usr_phone, usr_phone2, usr_cargo, usr_profile_image, usr_is_system_admin, usr_gender, usr_birth_date, usr_components, usr_disciplines, usr_carga_horaria, usr_turno_trabalho, usr_additional_info, usr_has_custom_schedule, usr_custom_schedule_details, usr_use_social_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)",
         [u.id, u.name, u.socialName, u.role, u.email, u.cpf, u.password, u.status || 'Inativo', u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin || false, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails, u.useSocialName || false]
       );
+      await recordLog(null, 'user.create', 'success', `Usuário ${u.name} criado com sucesso.`, req);
       res.status(201).json({ success: true });
     } catch (err) {
       console.error("User registration error:", err);
@@ -578,6 +600,7 @@ async function startServer() {
         "UPDATE users SET usr_name=$1, usr_social_name=$2, usr_role=$3, usr_email=$4, usr_cpf=$5, usr_password=$6, usr_status=$7, usr_secretaria=$8, usr_lotacao=$9, usr_matricula=$10, usr_phone=$11, usr_phone2=$12, usr_cargo=$13, usr_profile_image=$14, usr_is_system_admin=$15, usr_gender=$16, usr_birth_date=$17, usr_components=$18, usr_disciplines=$19, usr_carga_horaria=$20, usr_turno_trabalho=$21, usr_additional_info=$22, usr_has_custom_schedule=$23, usr_custom_schedule_details=$24, usr_use_social_name=$25 WHERE id=$26",
         [u.name, u.socialName, u.role, u.email, u.cpf, u.password, u.status, u.secretaria, u.lotacao, u.matricula, u.phone, u.phone2, u.cargo, u.profileImage, u.isSystemAdmin, u.gender, u.birthDate, u.components, u.disciplines, u.cargaHoraria, u.turnoTrabalho, u.additionalInfo, u.hasCustomSchedule, u.customScheduleDetails, u.useSocialName, id]
       );
+      await recordLog(null, 'user.update', 'success', `Usuário ${u.name} atualizado com sucesso.`, req);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -588,6 +611,7 @@ async function startServer() {
     const { id } = req.params;
     try {
       await query("DELETE FROM users WHERE id = $1", [id]);
+      await recordLog(null, 'user.delete', 'success', `Usuário com ID ${id} removido.`, req);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -623,10 +647,10 @@ async function startServer() {
   app.get("/api/responsibles", async (req, res) => {
     const { search } = req.query;
     try {
-      let queryStr = "SELECT id, resp_name as name FROM legal_responsible";
+      let queryStr = "SELECT id, resp_name as name, resp_contact_phone as \"contactPhone\", resp_email as email FROM legal_responsible";
       const params: any[] = [];
       if (search) {
-        queryStr += " WHERE resp_name ILIKE $1";
+        queryStr += " WHERE resp_name ILIKE $1 OR resp_contact_phone ILIKE $1 OR resp_email ILIKE $1";
         params.push(`%${search}%`);
       }
       queryStr += " ORDER BY resp_name ASC LIMIT 20";
@@ -854,6 +878,7 @@ async function startServer() {
       );
       
       await query("COMMIT");
+      await recordLog(null, 'student.create', 'success', `Aluno ${s.name} cadastrado com sucesso.`, req);
       console.log("Student registered successfully:", s.name);
       res.status(201).json({ success: true });
     } catch (err) {
@@ -884,6 +909,7 @@ async function startServer() {
       }
       
       await query("COMMIT");
+      await recordLog(null, 'student.delete', 'success', `Aluno com ID ${id} removido.`, req);
       res.json({ success: true });
     } catch (err) {
       await query("ROLLBACK");
@@ -922,6 +948,7 @@ async function startServer() {
       );
       
       await query("COMMIT");
+      await recordLog(null, 'student.update', 'success', `Aluno ${s.name} atualizado com sucesso.`, req);
       res.json({ success: true });
     } catch (err) {
       await query("ROLLBACK");
@@ -958,6 +985,7 @@ async function startServer() {
         "INSERT INTO occurrences (id, occ_student_id, occ_date, occ_type, occ_severity, occ_titles, occ_description, occ_reporter_name, occ_reporter_id, occ_status, occ_user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
         [o.id, o.studentId, o.date, o.type, o.severity, o.titles, o.description, o.reporterName, o.reporterId, o.status || 'Pendente', o.userId]
       );
+      await recordLog(o.userId, 'occurrence.create', 'success', `Ocorrência registrada para o aluno ID ${o.studentId}.`, req);
       res.status(201).json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -968,6 +996,7 @@ async function startServer() {
     const { id } = req.params;
     try {
       await query("DELETE FROM occurrences WHERE id = $1", [id]);
+      await recordLog(null, 'occurrence.delete', 'success', `Ocorrência com ID ${id} removida.`, req);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -1018,6 +1047,7 @@ async function startServer() {
     const { status } = req.body;
     try {
       await query("UPDATE occurrences SET occ_status = $1 WHERE id = $2", [status, id]);
+      await recordLog(null, 'occurrence.update_status', 'success', `Status da ocorrência ${id} alterado para ${status}.`, req);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: (err as Error).message });
@@ -1027,10 +1057,17 @@ async function startServer() {
   // Logs
   app.get("/api/logs", async (req, res) => {
     try {
-      const result = await query("SELECT * FROM access_logs ORDER BY acc_timestamp DESC LIMIT 200");
+      const result = await query(`
+        SELECT l.*, u.usr_name as user_name 
+        FROM access_logs l 
+        LEFT JOIN users u ON l.acc_user_id = u.id::TEXT 
+        ORDER BY l.acc_timestamp DESC 
+        LIMIT 200
+      `);
       res.json(result.rows.map(l => ({
         timestamp: l.acc_timestamp,
         user_id: l.acc_user_id,
+        user_name: l.user_name || l.acc_user_id,
         event: l.acc_event,
         status: l.acc_status,
         description: l.acc_description,

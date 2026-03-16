@@ -658,6 +658,7 @@ const App: React.FC = () => {
       case 'EDIT_USER': return 'Editar Perfil';
       case 'MY_PROFILE': return 'Meu Perfil';
       case 'VISUAL_IDENTITY': return 'Identidade Visual';
+      case 'ACCESS_LOGS': return 'Logs de Acesso';
       default: return 'Identidade Visual';
     }
   };
@@ -708,7 +709,7 @@ const App: React.FC = () => {
         setView={setView} 
         title={getTitle()} 
         isAdmin={currentUser?.isSystemAdmin} 
-        showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE', 'VISUAL_IDENTITY'].includes(view)} 
+        showBackButton={['STUDENT_LIST', 'STUDENT_DETAIL', 'ADD_OCCURRENCE', 'USER_MANAGEMENT', 'REPORTS', 'EDIT_USER', 'ADD_STUDENT', 'EDIT_STUDENT', 'ADD_RESPONSIBLE', 'PENDING_OCCURRENCES', 'SYSTEM_MANAGEMENT', 'OCCURRENCE_MONITORING', 'NEW_OCCURRENCE_MESSAGE', 'INDIVIDUAL_REPORT_SEARCH', 'STUDENT_DEFENSE', 'FORMALIZATION', 'MY_PROFILE', 'VISUAL_IDENTITY', 'ACCESS_LOGS'].includes(view)} 
         onBack={handleBack}
         onLogout={handleLogout}
       >
