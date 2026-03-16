@@ -72,10 +72,14 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
     hasCustomSchedule: user.hasCustomSchedule || false,
     customSchedule1: user.customScheduleDetails?.[0] || '',
     customSchedule2: user.customScheduleDetails?.[1] || '',
-    customSchedule3: user.customScheduleDetails?.[2] || ''
+    customSchedule3: user.customScheduleDetails?.[2] || '',
+    password: user.password || '',
+    repeat_password: user.password || ''
   });
 
   const [age, setAge] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
   const [selectedComponents, setSelectedComponents] = useState<string[]>(user.components || []);
   const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(user.disciplines || []);
   const [selectedCarga, setSelectedCarga] = useState<string[]>(user.cargaHoraria || []);
@@ -140,6 +144,17 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.password !== formData.repeat_password) {
+      alert("As senhas não coincidem!");
+      return;
+    }
+
+    if (formData.password && formData.password.length < 6) {
+      alert("A senha deve ter pelo menos 6 caracteres!");
+      return;
+    }
+
     const updatedUser: User = {
       ...user,
       name: formData.fullName,
@@ -163,7 +178,8 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
       turnoTrabalho: selectedTurno,
       additionalInfo: formData.additionalInfo,
       hasCustomSchedule: formData.hasCustomSchedule,
-      customScheduleDetails: formData.hasCustomSchedule ? [formData.customSchedule1, formData.customSchedule2, formData.customSchedule3] : []
+      customScheduleDetails: formData.hasCustomSchedule ? [formData.customSchedule1, formData.customSchedule2, formData.customSchedule3] : [],
+      password: formData.password
     };
     onSuccess(updatedUser);
   };
@@ -504,6 +520,67 @@ const UserEditForm: React.FC<UserEditFormProps> = ({
               placeholder="Digite aqui..."
             ></textarea>
         </div>
+
+        {/* 16. Senha */}
+        <div className="p-4 bg-red-50 rounded-3xl border border-red-100 space-y-4">
+          <label className="block text-sm font-semibold text-red-600 mb-1">Alterar Senha</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1">Nova Senha</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      name="password" 
+                      value={formData.password} 
+                      onChange={handleInputChange}
+                      className={`text-xs w-full p-3 pr-10 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.password ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`} 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                    >
+                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+              </div>
+              <div className="relative">
+                 <label className="block text-[13px] font-semibold text-slate-700 mb-1">Repetir Senha *</label>
+                 <div className="relative">
+                   <input 
+                     type={showRepeatPassword ? "text" : "password"} 
+                     name="repeat_password" 
+                     value={formData.repeat_password} 
+                     onChange={handleInputChange} 
+                     className={`text-xs w-full p-3 pr-10 border rounded-xl outline-none font-medium transition-all focus:ring-2 focus:ring-indigo-500 focus:bg-white ${formData.repeat_password ? 'bg-white border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}
+                     required 
+                   />
+                   <button 
+                      type="button"
+                      onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                    >
+                      <i className={`fas ${showRepeatPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                 </div>
+              </div>
+          </div>
+          
+          {formData.password !== formData.repeat_password && formData.repeat_password !== '' && (
+            <p className="text-[10px] font-bold text-red-500 animate-pulse">
+              <i className="fas fa-exclamation-circle mr-1"></i>
+              As senhas digitadas não são iguais.
+            </p>
+          )}
+          
+          {formData.password && formData.password.length > 0 && formData.password.length < 6 && (
+            <p className="text-[10px] font-bold text-amber-600">
+              <i className="fas fa-info-circle mr-1"></i>
+              A senha deve conter no mínimo 6 caracteres.
+            </p>
+          )}
+        </div>
+
 
         {showAdminToggle && (
             <div className="flex items-center space-x-3 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
